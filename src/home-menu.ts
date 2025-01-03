@@ -39,6 +39,7 @@ export class HomeMenu {
         icon.data = './icon.svg';
         icon.id = 'icon';
         this.iconPlaceholder.insertAdjacentElement('beforeend', icon);
+        console.log('servas');
         let version = document.createElement('object');
         version.data = './version.svg';
         version.id = 'version';
@@ -137,7 +138,7 @@ export class HomeMenu {
             }
 
             let object = document.createElement('object');
-            object.data = './keys/OG_T.svg';
+            object.data = './Latein-Trainer/keys/OG_T.svg';
             object.id = `key${keys}`;
             object.style.height = `100%`;
             this.input.insertAdjacentElement('beforeend', object);
