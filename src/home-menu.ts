@@ -36,7 +36,7 @@ export class HomeMenu {
         this.navbar.innerHTML = '';
 
         let icon = document.createElement('object');
-        icon.data = './Icon.svg';
+        icon.data = './icon.svg';
         icon.id = 'icon';
         this.iconPlaceholder.insertAdjacentElement('beforeend', icon);
         console.log('servas');
