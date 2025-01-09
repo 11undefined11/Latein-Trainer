@@ -1,0 +1,452 @@
+.bg {
+  box-sizing: border-box;
+  background-color: #0e062e;
+  border: none;
+}
+
+.inp {
+  box-sizing: border-box;
+  background-color: #06011b;
+  border: none;
+  flex-direction: row;
+  transition: box-shadow .25s;
+  display: flex;
+}
+
+.trainingBody, .addVocabularyBody, .inflectVocabularyBody {
+  background-color: #0e062e;
+  margin: 0;
+  overflow: hidden;
+}
+
+.trainingContainer, .addVocabularyContainer, .trainingContainer, .inflectVocabularyContainer {
+  width: 100vw;
+  height: 65vh;
+}
+
+.trainingIconPlaceholder, .addVocabularyIconPlaceholder, .inflectVocabularyIconPlaceholder {
+  box-sizing: border-box;
+  color: #fff;
+  text-align: center;
+  width: 100vw;
+  min-height: 20vh;
+  max-height: 20vh;
+  font-family: Lucida Sans, Lucida Sans Regular, Lucida Grande, Lucida Sans Unicode, Geneva, Verdana, sans-serif;
+  font-size: 2vh;
+
+  & h1 {
+    margin: 0;
+  }
+}
+
+.trainingNavbar, .addVocabularyNavbar, .inflectVocabularyNavbar {
+  box-sizing: border-box;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100vw;
+  height: 15vh;
+  padding: 2vh 1vw;
+  display: flex;
+}
+
+.navButton {
+  color: #0e062e;
+  background-color: #d2d2d2;
+  border: none;
+  justify-content: center;
+  align-items: center;
+  width: 10%;
+  height: 100%;
+  font-size: 9vh;
+  transition: background-color .25s;
+  display: flex;
+  box-shadow: inset 0 0 .5vh .5vh #000;
+}
+
+#addVocabularyIcon {
+  width: auto;
+  height: 20vh;
+}
+
+.clicked {
+  background-color: #fff;
+}
+
+.selected {
+  margin: .75vh;
+  box-shadow: 0 0 .5vh .5vh #8a2be2;
+}
+
+.shadow {
+  margin: 1vh;
+  box-shadow: 0 0 1vh 1vh #2be231;
+}
+
+.showVocabularyBody {
+  background-color: #dfdfdf;
+  margin: 0;
+  overflow: hidden;
+}
+
+.showVocabularyIconPlaceholder {
+  background-color: #fff;
+  place-content: center;
+  width: auto;
+  height: 7.5vh;
+  font-size: 3vh;
+  display: grid;
+}
+
+#showVocabularyIcon {
+  width: auto;
+  height: 7vh;
+}
+
+.showVocabularyContainer {
+  box-sizing: border-box;
+  grid-template-columns: 5.76471% repeat(4, 23.0588%);
+  align-content: start;
+  gap: 1vh;
+  width: auto;
+  height: 88vh;
+  margin: 1vh 0 1vh 1vh;
+  padding-right: 1vh;
+  display: grid;
+  position: relative;
+  overflow: hidden auto;
+}
+
+.showVocabularyNavbar {
+  background-color: #fff;
+  place-content: center space-around;
+  width: 100vw;
+  height: 2.5vh;
+  font-family: Proxima Nova, Consolas;
+  font-size: 1vh;
+  display: flex;
+  bottom: 0;
+  position: absolute !important;
+
+  & span {
+    align-content: center;
+  }
+}
+
+.showVocabularyNavbar span:first-child {
+  margin-left: 20vw;
+}
+
+.showVocabularyNavbar span:last-child {
+  margin-right: 20vw;
+}
+
+.word {
+  text-align: center;
+  box-sizing: border-box;
+  background-color: #f5f5f5;
+  place-content: center;
+  align-items: center;
+  height: 5vh;
+  display: flex;
+}
+
+.edit {
+  text-align: center;
+  background-color: #f5f5f5;
+  border: none;
+  justify-content: center;
+  width: max-content;
+  height: max-content;
+  margin: 0;
+  padding: 0;
+  font-family: Consolas;
+  transition: border .25s;
+  font-size: 1vw !important;
+}
+
+input.checkbox {
+  border: #0e062e;
+  width: 1.5vw !important;
+  height: 1.5vw !important;
+  margin: 0 !important;
+}
+
+.cdiv span {
+  text-align: center;
+  color: #fff;
+  cursor: context-menu;
+  font-family: Lucida Sans, Lucida Sans Regular, Lucida Grande, Lucida Sans Unicode;
+  font-weight: bold;
+}
+
+.cdiv.mouseon {
+  animation: 1s .5s forwards delete;
+}
+
+.cdiv {
+  background-color: #f5f5f5;
+}
+
+.danger, .danger input.edit {
+  background-color: #ff9696;
+}
+
+@keyframes delete {
+  0% {
+    background-color: #f5f5f5;
+  }
+
+  100% {
+    background-color: red;
+  }
+}
+
+.trainingBody {
+  height: 115vh;
+}
+
+.trainingIconPlaceholder {
+  place-content: center;
+  display: grid;
+}
+
+#trainingIcon {
+  width: auto;
+  height: 10vh;
+}
+
+.t {
+  background: none;
+}
+
+.not-editable {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  padding: 0 !important;
+}
+
+.not-editable span {
+  text-align: center;
+  color: #fff;
+  font-family: Lucida Sans, Lucida Sans Regular, Lucida Grande, Lucida Sans Unicode;
+  font-weight: bold;
+}
+
+.homeDiv {
+  background-color: #440075;
+  border-radius: 5vh 5vh 0 0;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 15vh;
+  transition: margin-top 1s, height 1s;
+  display: flex;
+}
+
+.homeButton {
+  border: .5vh solid #fff;
+  border-radius: 100%;
+  justify-content: center;
+  align-items: center;
+  width: 10vh;
+  height: 10vh;
+  display: flex;
+}
+
+.moveUp {
+  margin-top: -15vh;
+}
+
+.moveDown {
+  margin-top: 0;
+}
+
+.homeBody {
+  background: none;
+  margin: 0;
+  overflow: hidden;
+}
+
+.homeIconPlaceholder {
+  box-sizing: border-box;
+  grid-template-rows: auto;
+  justify-items: center;
+  height: 65vh;
+  padding-top: 15vh;
+  display: grid;
+}
+
+#icon {
+  width: auto;
+  height: 30vh;
+}
+
+#version {
+  width: auto;
+  height: 3.75vh;
+  margin-bottom: 1vh;
+  margin-right: 4vw;
+  place-self: flex-end right !important;
+}
+
+.homeInput {
+  flex-direction: row;
+  height: 12vh;
+  display: flex;
+}
+
+.homeNavbar {
+  height: 23vh;
+}
+
+.inflectVocabularyBody {
+  background-color: #0f004a;
+}
+
+.inflectVocabularyContainer.nouns {
+  grid-template-rows: 7.69231% repeat(6, 15.3846%);
+  grid-template-columns: 10% 45% 45%;
+  display: grid;
+}
+
+.inflectVocabularyContainer.verbs {
+  box-sizing: border-box;
+  grid-template-rows: 14.2857% repeat(3, 28.5714%);
+  grid-template-columns: 10% 45% 45%;
+  padding-top: 5vh;
+  padding-bottom: 15vh;
+  display: grid;
+}
+
+#container:focus {
+  outline: none;
+}
+
+.inflectVocabularyBody div {
+  & div {
+    background-color: #06011b;
+    margin: 1vh 1vw;
+  }
+}
+
+.firstrow {
+  text-align: center;
+  color: #fff;
+  font-family: Lucida Sans, Lucida Sans Regular, Lucida Grande, Lucida Sans Unicode;
+  font-size: 75%;
+  font-weight: bold;
+  background-color: #0000 !important;
+}
+
+.firstcolumn {
+  text-align: right;
+  color: #fff;
+  align-content: center;
+  font-family: Lucida Sans, Lucida Sans Regular, Lucida Grande, Lucida Sans Unicode;
+  font-weight: bold;
+  background-color: #0000 !important;
+}
+
+.selectedElement {
+  box-shadow: 0 0 .5vh .5vh #8a2be2 !important;
+}
+
+.selectedElement.v {
+  box-shadow: 0 0 .5vh .5vh #ff5e01 !important;
+}
+
+.selectedElement.shadowDesign, .selectedElement.redShadowDesign, .selectedElement.greenShadowDesign {
+  box-shadow: 0 0 1vh 1vh #8a2be2 !important;
+}
+
+.selectedElement.shadowDesign.v, .selectedElement.redShadowDesign.v, .selectedElement.greenShadowDesign.v {
+  box-shadow: 0 0 1vh 1vh #ff5e01 !important;
+}
+
+.redShadowDesign.v {
+  box-shadow: 0 0 .5vh .5vh #ff00d4;
+}
+
+.savedElement {
+  box-shadow: 0 0 1vh 1vh #2be231;
+}
+
+.roundButton {
+  background-color: #f5f5f5;
+  border: 1px ridge #fff;
+  border-radius: 100%;
+  justify-content: center;
+  align-items: center;
+  width: 10vh;
+  height: 10vh;
+}
+
+.roundButton:hover {
+  color: #696969;
+  background-color: #fff;
+  box-shadow: 0 0 .5vh .5vh #fff;
+}
+
+.click {
+  text-shadow: white !important;
+  color: #fff !important;
+  background-color: #000 !important;
+}
+
+.inflectVocabularyNavbar {
+  justify-content: space-evenly;
+}
+
+.deletionButton {
+  color: #fff;
+  background-color: #ea0000;
+  font-size: 5vh;
+}
+
+.deletionButton.v {
+  background-color: #ff00d4;
+}
+
+.shadowDesign {
+  box-shadow: 0 0 .5vw .5vh #06011b;
+}
+
+.greenShadowDesign {
+  box-shadow: 0 0 .5vw .5vh #2be231;
+}
+
+.redShadowDesign {
+  box-shadow: 0 0 .5vw .5vh #e80000;
+}
+
+.selectedElement.tab {
+  box-shadow: 0 0 1vh 1vh #40f !important;
+}
+
+.selectedElement.tab.v {
+  box-shadow: 0 0 1vh 1vh #d30000 !important;
+}
+
+.known-case {
+  box-shadow: none;
+  background: radial-gradient(#06011b, #0f004a);
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  padding: 0 !important;
+
+  & span {
+    text-align: center;
+    color: #fff;
+    font-family: Lucida Sans, Lucida Sans Regular, Lucida Grande, Lucida Sans Unicode;
+    font-weight: bold;
+  }
+}
+
+.c {
+  font-size: 7.5vh;
+}
+/*# sourceMappingURL=index.3a01df49.css.map */
