@@ -1221,6 +1221,7 @@ class HomeMenu {
         icon.data = './icon.svg';
         icon.id = 'icon';
         this.iconPlaceholder.insertAdjacentElement('beforeend', icon);
+        console.log('servas');
         let version = document.createElement('object');
         version.data = './version.svg';
         version.id = 'version';
