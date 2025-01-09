@@ -138,7 +138,7 @@ export class HomeMenu {
             }
 
             let object = document.createElement('object');
-            object.data = './Latein-Trainer/keys/OG_T.svg';
+            object.data = './keys/OG_T.svg';
             object.id = `key${keys}`;
             object.style.height = `100%`;
             this.input.insertAdjacentElement('beforeend', object);
