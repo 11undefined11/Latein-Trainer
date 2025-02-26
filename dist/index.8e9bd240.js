@@ -142,7 +142,7 @@
       this[globalName] = mainExports;
     }
   }
-})({"iYiw7":[function(require,module,exports,__globalThis) {
+})({"gpxX8":[function(require,module,exports,__globalThis) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
@@ -645,6 +645,8 @@ class AddVocabulary {
         this.vocabulary = [];
         this.wordIndex = 0;
         this.enterMode = false;
+        this.commandMode = false;
+        this.command = '';
         const request = window.indexedDB.open('Vocabulary', 1);
         request.addEventListener('error', (_)=>{
             console.error('There is an error. Have fun fixing it. Details:' + request.error);
@@ -851,7 +853,7 @@ class AddVocabulary {
                 this.buttonRight.classList.remove('clicked');
             }
         });
-        this.buttonLeft.addEventListener('mouseup', (_)=>{
+        this.buttonLeftFunction = (_)=>{
             if (this.vocabulary[this.wordIndex - 1]) {
                 if (Object.values(currentWord).filter((value)=>value === '').length === 4 && this.wordIndex === this.vocabulary.length) {
                     for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
@@ -903,8 +905,9 @@ class AddVocabulary {
                     };
                 }
             }
-        });
-        this.buttonRight.addEventListener('mouseup', (_)=>{
+        };
+        this.buttonLeft.addEventListener('mouseup', this.buttonLeftFunction);
+        this.buttonRightFunction = (_)=>{
             this.buttonRight.classList.remove('clicked');
             if (!this.vocabulary[this.wordIndex + 1]) {
                 this.vocabulary[this.wordIndex] = currentWord;
@@ -963,115 +966,218 @@ class AddVocabulary {
                     }
                 };
             }
-        });
+        };
+        this.buttonRight.addEventListener('mouseup', this.buttonRightFunction);
         this.keyDownFunction = (event)=>{
             let forbiddenCharacters = [
-                '<',
                 "\xb4",
                 '`',
                 '^'
             ];
-            if (event.key === 'Backspace') {
-                if (selectedInput.lastElementChild) {
-                    selectedInput.lastElementChild.remove();
-                    Object.defineProperty(currentWord, Object.keys(currentWord)[inputIndex], {
-                        value: Object.values(currentWord)[inputIndex].slice(0, keys - 1)
+            if (this.commandMode) {
+                if (event.key === 'Enter') {
+                    switch(this.command){
+                        case '#<':
+                        case '#<-':
+                        case '#previous':
+                        case '#prvs':
+                        case '#vorheriges':
+                        case '#voriges':
+                        case '#Vorheriges':
+                        case '#Voriges':
+                        case '#Previous':
+                        case '#Prev':
+                        case '#prev':
+                        case '#p':
+                            this.command = '';
+                            this.commandMode = false;
+                            this.buttonLeftFunction(event);
+                            return;
+                        case '#>':
+                        case '#->':
+                        case '#next':
+                        case '#nxt':
+                        case "#n\xe4chstes":
+                        case "#N\xe4chstes":
+                        case '#Next':
+                        case '#Nxt':
+                        case '#n':
+                            this.command = '';
+                            this.commandMode = false;
+                            this.buttonRightFunction(event);
+                            return;
+                        case '#exit':
+                        case '#quit':
+                        case '#stop':
+                        case '#home':
+                        case '#stopp':
+                        case '#beenden':
+                        case '#Stopp':
+                        case "#hauptmen\xfc":
+                        case "#Hauptmen\xfc":
+                        case '#home menu':
+                        case '#h':
+                            this.command = '';
+                            this.commandMode = false;
+                            (0, _.removeAllEventListeners)();
+                            (0, _.home).modifyDocument();
+                            return;
+                        default:
+                            this.command.split('').forEach((_)=>{
+                                selectedInput.lastElementChild.remove();
+                                keys--;
+                            });
+                    }
+                    this.command = '';
+                    this.commandMode = false;
+                    return;
+                } else if (event.key === 'ArrowUp') {
+                    this.command.split('').forEach((_)=>{
+                        selectedInput.lastElementChild.remove();
+                        keys--;
                     });
-                    keys--;
+                    this.command = '';
+                    this.commandMode = false;
+                    if (inputIndex > 0) {
+                        inputIndex--;
+                        selectedInput.classList.remove('selected');
+                        selectedInput = this.container.children[inputs[inputIndex]];
+                        keys = selectedInput.childElementCount;
+                    }
+                    selectedInput.classList.add('selected');
+                    return;
+                } else if (event.key === 'ArrowDown') {
+                    this.command.split('').forEach((_)=>{
+                        selectedInput.lastElementChild.remove();
+                        keys--;
+                    });
+                    this.command = '';
+                    this.commandMode = false;
+                    if (inputIndex + 1 < 4) {
+                        inputIndex++;
+                        selectedInput.classList.remove('selected');
+                        selectedInput = this.container.children[inputs[inputIndex]];
+                        keys = selectedInput.childElementCount;
+                    }
+                    selectedInput.classList.add('selected');
+                    return;
+                } else if (event.key === 'Backspace') {
+                    if (selectedInput.lastElementChild) {
+                        selectedInput.lastElementChild.remove();
+                        this.command = this.command.slice(0, this.command.length - 1);
+                        keys--;
+                        if (this.command === '') this.commandMode = false;
+                    }
                 }
-                return;
-            } else if (event.key === 'Enter' || event.key === 'ArrowDown') {
-                if (inputIndex + 1 < 4) {
-                    inputIndex++;
+                if (this.commandMode && (forbiddenCharacters.includes(event.key) || event.key.length > 1)) return;
+            }
+            //TODO: enable commands in add vocabulary
+            if (!this.commandMode) {
+                if (event.key === 'Backspace') {
+                    if (selectedInput.lastElementChild) {
+                        selectedInput.lastElementChild.remove();
+                        Object.defineProperty(currentWord, Object.keys(currentWord)[inputIndex], {
+                            value: Object.values(currentWord)[inputIndex].slice(0, keys - 1)
+                        });
+                        keys--;
+                    }
+                    return;
+                } else if (event.key === 'Enter' || event.key === 'ArrowDown') {
+                    if (inputIndex + 1 < 4) {
+                        inputIndex++;
+                        selectedInput = this.container.children[inputs[inputIndex]];
+                        for(let i = 0; i < this.container.childElementCount; i++)if (this.container.children[i] != selectedInput) this.container.children[i].classList.remove('selected');
+                        else {
+                            selectedInput.classList.add('selected');
+                            keys = selectedInput.childElementCount;
+                        }
+                    } else {
+                        for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.add('shadow');
+                        if (this.enterMode) {
+                            this.buttonRight.classList.remove('clicked');
+                            if (!this.vocabulary[this.wordIndex + 1]) {
+                                this.vocabulary[this.wordIndex] = currentWord;
+                                const transaction = this.database.transaction(`vocabulary`, 'readwrite');
+                                transaction.onerror = (_)=>console.error(transaction.error);
+                                const objectStore = transaction.objectStore(`vocabulary`);
+                                const req = objectStore.put(currentWord, this.wordIndex + 1);
+                                req.onerror = (_)=>console.error(req.error);
+                                transaction.oncomplete = (_)=>{
+                                    for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                                    this.wordIndex++;
+                                    keys = 0;
+                                    currentWord = {
+                                        latinWord: '',
+                                        inflections: '',
+                                        germanTranslation: '',
+                                        relatedForeignWords: '',
+                                        selected: true,
+                                        probability: 1
+                                    };
+                                    for(let i = 0; i < this.container.childElementCount; i += 2){
+                                        this.container.children[i].innerHTML = '';
+                                        inputIndex = 0;
+                                        selectedInput = this.container.children[0];
+                                        selectedInput.classList.add('selected');
+                                        if (i != 0) this.container.children[i].classList.remove('selected');
+                                    }
+                                };
+                            } else {
+                                this.vocabulary[this.wordIndex] = currentWord;
+                                for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                                const transaction = this.database.transaction(`vocabulary`, 'readwrite');
+                                transaction.onerror = (_)=>console.error(transaction.error);
+                                const objectStore = transaction.objectStore(`vocabulary`);
+                                const req = objectStore.get(this.wordIndex);
+                                req.onerror = (_)=>console.error(req.error);
+                                req.onsuccess = (_)=>{
+                                    const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
+                                    idontcare.onerror = (_)=>console.log(idontcare.error);
+                                    this.wordIndex++;
+                                    currentWord = this.vocabulary[this.wordIndex];
+                                    for(let i = 0; i < this.container.childElementCount; i += 2){
+                                        let value = Object.values(currentWord)[i / 2];
+                                        this.container.children[i].innerHTML = '';
+                                        for(let ii = 0; ii < value.length; ii++){
+                                            let object = document.createElement('object');
+                                            object.data = './keys/OG_T.svg';
+                                            object.id = `key${ii}-inp${i / 2}`;
+                                            object.style.height = `100%`;
+                                            this.container.children[i].insertAdjacentElement('beforeend', object);
+                                            object.addEventListener('load', (_)=>{
+                                                let svg = object.contentDocument;
+                                                svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                            });
+                                        }
+                                    }
+                                };
+                            }
+                            this.enterMode = false;
+                        } else this.enterMode = true;
+                        const transaction = this.database.transaction(`vocabulary`, 'readwrite');
+                        transaction.onerror = (_)=>console.error(transaction.error);
+                        const objectStore = transaction.objectStore(`vocabulary`);
+                        const req = objectStore.put(currentWord, this.wordIndex + 1);
+                        req.onerror = (_)=>console.error(req.error);
+                        setTimeout((_)=>{
+                            for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                        }, 250);
+                    }
+                    return;
+                } else if (event.key === 'ArrowUp') {
+                    if (inputIndex > 0) inputIndex--;
                     selectedInput = this.container.children[inputs[inputIndex]];
                     for(let i = 0; i < this.container.childElementCount; i++)if (this.container.children[i] != selectedInput) this.container.children[i].classList.remove('selected');
                     else {
                         selectedInput.classList.add('selected');
                         keys = selectedInput.childElementCount;
                     }
-                } else {
-                    for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.add('shadow');
-                    if (this.enterMode) {
-                        this.buttonRight.classList.remove('clicked');
-                        if (!this.vocabulary[this.wordIndex + 1]) {
-                            this.vocabulary[this.wordIndex] = currentWord;
-                            const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                            transaction.onerror = (_)=>console.error(transaction.error);
-                            const objectStore = transaction.objectStore(`vocabulary`);
-                            const req = objectStore.put(currentWord, this.wordIndex + 1);
-                            req.onerror = (_)=>console.error(req.error);
-                            transaction.oncomplete = (_)=>{
-                                for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
-                                this.wordIndex++;
-                                keys = 0;
-                                currentWord = {
-                                    latinWord: '',
-                                    inflections: '',
-                                    germanTranslation: '',
-                                    relatedForeignWords: '',
-                                    selected: true,
-                                    probability: 1
-                                };
-                                for(let i = 0; i < this.container.childElementCount; i += 2){
-                                    this.container.children[i].innerHTML = '';
-                                    inputIndex = 0;
-                                    selectedInput = this.container.children[0];
-                                    selectedInput.classList.add('selected');
-                                    if (i != 0) this.container.children[i].classList.remove('selected');
-                                }
-                            };
-                        } else {
-                            this.vocabulary[this.wordIndex] = currentWord;
-                            for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
-                            const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                            transaction.onerror = (_)=>console.error(transaction.error);
-                            const objectStore = transaction.objectStore(`vocabulary`);
-                            const req = objectStore.get(this.wordIndex);
-                            req.onerror = (_)=>console.error(req.error);
-                            req.onsuccess = (_)=>{
-                                const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
-                                idontcare.onerror = (_)=>console.log(idontcare.error);
-                                this.wordIndex++;
-                                currentWord = this.vocabulary[this.wordIndex];
-                                for(let i = 0; i < this.container.childElementCount; i += 2){
-                                    let value = Object.values(currentWord)[i / 2];
-                                    this.container.children[i].innerHTML = '';
-                                    for(let ii = 0; ii < value.length; ii++){
-                                        let object = document.createElement('object');
-                                        object.data = './keys/OG_T.svg';
-                                        object.id = `key${ii}-inp${i / 2}`;
-                                        object.style.height = `100%`;
-                                        this.container.children[i].insertAdjacentElement('beforeend', object);
-                                        object.addEventListener('load', (_)=>{
-                                            let svg = object.contentDocument;
-                                            svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
-                                        });
-                                    }
-                                }
-                            };
-                        }
-                        this.enterMode = false;
-                    } else this.enterMode = true;
-                    const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                    transaction.onerror = (_)=>console.error(transaction.error);
-                    const objectStore = transaction.objectStore(`vocabulary`);
-                    const req = objectStore.put(currentWord, this.wordIndex + 1);
-                    req.onerror = (_)=>console.error(req.error);
-                    setTimeout((_)=>{
-                        for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
-                    }, 250);
-                }
-                return;
-            } else if (event.key === 'ArrowUp') {
-                if (inputIndex > 0) inputIndex--;
-                selectedInput = this.container.children[inputs[inputIndex]];
-                for(let i = 0; i < this.container.childElementCount; i++)if (this.container.children[i] != selectedInput) this.container.children[i].classList.remove('selected');
-                else {
-                    selectedInput.classList.add('selected');
-                    keys = selectedInput.childElementCount;
-                }
-                return;
-            } else if (forbiddenCharacters.includes(event.key) || event.key.length > 1) return;
+                    return;
+                } else if (event.key === '#') {
+                    this.command = '';
+                    this.commandMode = true;
+                } else if (forbiddenCharacters.includes(event.key) || event.key.length > 1) return;
+            }
             let object = document.createElement('object');
             object.data = './keys/OG_T.svg';
             object.id = `key${keys}-inp${inputIndex}`;
@@ -1079,7 +1185,7 @@ class AddVocabulary {
             selectedInput.insertAdjacentElement('beforeend', object);
             let width = object.clientHeight;
             object.hidden = true;
-            object.addEventListener('load', (_)=>{
+            object.addEventListener('load', (_1)=>{
                 if (keys >= Math.floor(window.innerWidth / width)) {
                     object.remove();
                     for(let i = 0; i < keys; i++)this.failureAnimation(selectedInput.children[i]);
@@ -1087,12 +1193,18 @@ class AddVocabulary {
                 }
                 object.hidden = false;
                 let svg = object.contentDocument;
-                svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
-                Object.defineProperty(currentWord, Object.keys(currentWord)[inputIndex], {
-                    value: Object.values(currentWord)[inputIndex] + event.key.charAt(0)
-                });
+                if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
+                else svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
+                if (!this.commandMode) {
+                    Object.defineProperty(currentWord, Object.keys(currentWord)[inputIndex], {
+                        value: Object.values(currentWord)[inputIndex] + event.key.charAt(0)
+                    });
+                    this.idleAnimation(object);
+                } else {
+                    this.command += event.key;
+                    (0, _.training).commandAnimation(object);
+                }
                 keys++;
-                this.idleAnimation(object);
             });
         };
         document.addEventListener('keydown', this.keyDownFunction);
@@ -1913,7 +2025,6 @@ class VocabularyTraining {
                 if (this.commandMode && (this.selectedInput.classList.contains('not-editable') || forbiddenCharacters.includes(event.key) || event.key.length > 1)) return;
             }
             if (!this.commandMode) {
-                //TODO: space styling: style empty lines in green when right and red when wrong
                 if ((event.key === 'Enter' || event.key === 'ArrowDown') && !mode) {
                     if (this.currentWord && !isNaN(this.currentWordIndex) && event.key === 'Enter') {
                         if (Object.values(this.currentWord)[this.inputIndex] === Object.values(this.vocabulary[this.currentWordIndex])[this.inputIndex] || Object.values(this.currentWord)[this.inputIndex] === '') {
@@ -2295,6 +2406,8 @@ class InflectVocabulary {
     constructor(){
         this.enterMode = false;
         this.tabMode = false;
+        this.commandMode = false;
+        this.command = "";
         this.tabulator = "";
         this.tabCount = 0;
         this.v = 1;
@@ -2304,7 +2417,6 @@ class InflectVocabulary {
         this.totalPoints = 0;
         this.badColor = 'rgb(186, 2, 70)';
     }
-    //TODO: Remove greenShadowDesign in certain cases
     modifyDocument(param) {
         this.container = document.querySelector('#container');
         this.iconPlaceholder = document.querySelector('#icon-placeholder');
@@ -2395,12 +2507,14 @@ class InflectVocabulary {
                                 (0, _.removeAllEventListeners)();
                                 if (this.tabMode) this.cancelTabMode();
                                 (0, _.home).modifyDocument();
+                                this.commandMode = false;
                             });
                         });
                         this.homeButton.onclick = (_1)=>{
                             (0, _.removeAllEventListeners)();
                             if (this.tabMode) this.cancelTabMode();
                             (0, _.home).modifyDocument();
+                            this.commandMode = false;
                         };
                         this.homeButton.insertAdjacentElement('beforeend', icon);
                         this.navbar.appendChild(this.homeButton);
@@ -2450,216 +2564,289 @@ class InflectVocabulary {
                 };
                 this.keydownFunction = (event)=>{
                     let forbiddenCharacters = [
-                        '<',
                         "\xb4",
                         '`',
                         '^'
                     ];
-                    if (event.key === 'ArrowRight') {
-                        if (this.inputIndex < 20 - this.v) {
-                            this.inputIndex++;
-                            if (this.inputIndex % 3 === 0) this.inputIndex++;
+                    if (this.commandMode) {
+                        forbiddenCharacters.push('#');
+                        if (event.key === 'Enter') {
+                            this.command;
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.lastElementChild.remove();
+                                this.keys--;
+                            });
+                            if (this.inputIndex < 18 - this.v) this.inputIndex += 3;
+                            else if (this.inputIndex === 19 - this.v) this.inputIndex = 5;
+                            this.commandMode = false;
                             this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        }
-                        return;
-                    } else if (event.key === 'ArrowLeft') {
-                        if (this.inputIndex > 4) {
-                            this.inputIndex--;
-                            if (this.inputIndex % 3 === 0) this.inputIndex--;
+                            return;
+                        } else if (event.key === 'ArrowUp') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
+                            });
+                            if (this.inputIndex > 6) this.inputIndex -= 3;
                             this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
+                            this.command = '';
+                            this.commandMode = false;
+                            return;
+                        } else if (event.key === 'ArrowDown') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
+                            });
+                            this.command = '';
+                            this.commandMode = false;
+                            if (this.inputIndex < 18 - this.v) this.inputIndex += 3;
+                            this.changeSelectedInput();
+                            return;
+                        } else if (event.key === 'ArrowLeft') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
+                            });
+                            this.command = '';
+                            this.commandMode = false;
+                            if (this.inputIndex > 4) {
+                                this.inputIndex--;
+                                if (this.inputIndex % 3 === 0) this.inputIndex--;
+                                this.changeSelectedInput();
+                            }
+                            return;
+                        } else if (event.key === 'ArrowRight') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
+                            });
+                            this.command = '';
+                            this.commandMode = false;
+                            if (this.inputIndex < 20 - this.v) {
+                                this.inputIndex++;
+                                if (this.inputIndex % 3 === 0) this.inputIndex++;
+                                this.changeSelectedInput();
+                            }
+                            return;
+                        } else if (event.key === 'Backspace') {
+                            if (this.selectedInput.lastElementChild) {
+                                this.selectedInput.lastElementChild.remove();
+                                this.command = this.command.slice(0, this.command.length - 1);
+                                this.keys--;
+                                if (this.command === '') this.commandMode = false;
+                            }
                         }
-                        return;
-                    } else if (event.key === 'ArrowDown' || event.key === 'Enter') {
-                        if (this.inputIndex < 20 - this.v) {
-                            if (event.key === 'Enter' && !this.selectedInput.classList.contains('known-case')) {
-                                if (this.compare(Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1], Object.values(this.vocabulary[this.currentWordIndex])[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1])) {
-                                    for(let i = 0; i < this.selectedInput.childElementCount; i++){
-                                        let object = this.selectedInput.children[i];
-                                        this.successAnimation(object);
-                                    }
-                                    if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
-                                        let array = Object.values(this.result)[this.inputIndex % 3 - 1];
-                                        array[Math.floor(this.inputIndex / 3) - 1] = true;
-                                        Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
-                                            value: array
-                                        });
+                        if (this.commandMode && (this.selectedInput.classList.contains('known-case') || forbiddenCharacters.includes(event.key) || event.key.length > 1)) return;
+                    }
+                    if (!this.commandMode) {
+                        if (event.key === 'ArrowRight') {
+                            if (this.inputIndex < 20 - this.v) {
+                                this.inputIndex++;
+                                if (this.inputIndex % 3 === 0) this.inputIndex++;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            }
+                            return;
+                        } else if (event.key === 'ArrowLeft') {
+                            if (this.inputIndex > 4) {
+                                this.inputIndex--;
+                                if (this.inputIndex % 3 === 0) this.inputIndex--;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            }
+                            return;
+                        } else if (event.key === 'ArrowDown' || event.key === 'Enter') {
+                            if (this.inputIndex < 20 - this.v) {
+                                if (event.key === 'Enter' && !this.selectedInput.classList.contains('known-case')) {
+                                    if (this.compare(Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1], Object.values(this.vocabulary[this.currentWordIndex])[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1])) {
+                                        for(let i = 0; i < this.selectedInput.childElementCount; i++){
+                                            let object = this.selectedInput.children[i];
+                                            this.successAnimation(object);
+                                        }
+                                        if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
+                                            let array = Object.values(this.result)[this.inputIndex % 3 - 1];
+                                            array[Math.floor(this.inputIndex / 3) - 1] = true;
+                                            Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
+                                                value: array
+                                            });
+                                            let inp = this.selectedInput;
+                                            setTimeout((_)=>{
+                                                inp.classList.remove('shadowDesign');
+                                                inp.classList.add('greenShadowDesign');
+                                            }, 500);
+                                        }
+                                    } else {
+                                        for(let i = 0; i < this.selectedInput.childElementCount; i++){
+                                            let object = this.selectedInput.children[i];
+                                            this.failureAnimation(object);
+                                        }
+                                        if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
+                                            let array = Object.values(this.result)[this.inputIndex % 3 - 1];
+                                            array[Math.floor(this.inputIndex / 3) - 1] = false;
+                                            Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
+                                                value: array
+                                            });
+                                        }
                                         let inp = this.selectedInput;
                                         setTimeout((_)=>{
                                             inp.classList.remove('shadowDesign');
-                                            inp.classList.add('greenShadowDesign');
+                                            inp.classList.add('redShadowDesign');
                                         }, 500);
                                     }
-                                } else {
-                                    for(let i = 0; i < this.selectedInput.childElementCount; i++){
-                                        let object = this.selectedInput.children[i];
-                                        this.failureAnimation(object);
+                                }
+                            }
+                            if (this.inputIndex < 18 - this.v) {
+                                this.inputIndex += 3;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                                if (event.key === 'Enter' && this.selectedInput.classList.contains('known-case')) {
+                                    if (this.inputIndex < 18 - this.v) {
+                                        this.inputIndex += 3;
+                                        this.changeSelectedInput();
+                                        this.keys = this.selectedInput.childElementCount;
+                                    } else if (this.inputIndex === 19 - this.v) {
+                                        this.inputIndex = 5;
+                                        this.changeSelectedInput();
+                                        this.keys = this.selectedInput.childElementCount;
                                     }
-                                    if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
-                                        let array = Object.values(this.result)[this.inputIndex % 3 - 1];
-                                        array[Math.floor(this.inputIndex / 3) - 1] = false;
-                                        Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
-                                            value: array
-                                        });
+                                }
+                            } else if (event.key === 'Enter' && this.inputIndex === 19 - this.v) {
+                                this.inputIndex = 5;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            } else if (event.key === 'Enter' && this.inputIndex === 20 - this.v) {
+                                this.currentWord.singular.forEach((word, i)=>{
+                                    let index = 1 + (i + 1) * 3;
+                                    if (this.compare(word, Object.values(this.vocabulary[this.currentWordIndex])[index % 3 - 1][Math.floor(index / 3) - 1])) {
+                                        for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
+                                            let object = this.container.children[index].children[ii];
+                                            this.successAnimation(object);
+                                        }
+                                        if (Object.values(this.result)[index % 3 - 1][Math.floor(index / 3) - 1] === undefined) {
+                                            let array = Object.values(this.result)[this.inputIndex % 3 - 1];
+                                            array[Math.floor(this.inputIndex / 3) - 1] = true;
+                                            Object.defineProperty(this.result, Object.keys(this.result)[index % 3 - 1], {
+                                                value: array
+                                            });
+                                        }
+                                    } else {
+                                        for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
+                                            let object = this.container.children[index].children[ii];
+                                            this.failureAnimation(object);
+                                        }
+                                        if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
+                                            let array = Object.values(this.result)[this.inputIndex % 3 - 1];
+                                            array[Math.floor(this.inputIndex / 3) - 1] = false;
+                                            Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
+                                                value: array
+                                            });
+                                        }
                                     }
-                                    let inp = this.selectedInput;
+                                });
+                                this.currentWord.plural.forEach((word, i)=>{
+                                    let index = 2 + (i + 1) * 3;
+                                    if (this.compare(word, Object.values(this.vocabulary[this.currentWordIndex])[index % 3 - 1][Math.floor(index / 3) - 1])) {
+                                        for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
+                                            let object = this.container.children[index].children[ii];
+                                            this.successAnimation(object);
+                                        }
+                                        if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
+                                            let array = Object.values(this.result)[this.inputIndex % 3 - 1];
+                                            array[Math.floor(this.inputIndex / 3) - 1] = true;
+                                            Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
+                                                value: array
+                                            });
+                                        }
+                                    } else {
+                                        for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
+                                            let object = this.container.children[index].children[ii];
+                                            this.failureAnimation(object);
+                                        }
+                                        if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
+                                            let array = Object.values(this.result)[this.inputIndex % 3 - 1];
+                                            array[Math.floor(this.inputIndex / 3) - 1] = false;
+                                            Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
+                                                value: array
+                                            });
+                                        }
+                                    }
+                                });
+                                if (this.compareObjects(this.currentWord, this.vocabulary[this.currentWordIndex])) {
+                                    this.totalAttempts += 11 - this.v / 3 * 2;
+                                    let addition = this.result.singular.filter((w)=>w === true).length + this.result.plural.filter((w)=>w === true).length;
+                                    this.totalPoints += addition;
+                                    if (addition != 12 - this.v / 3 * 2) this.vocabulary[this.currentWordIndex].probability *= 0.8;
+                                    else this.vocabulary[this.currentWordIndex].probability *= 1.2;
+                                    const transaction = this.database.transaction('inflected vocabulary', 'readwrite');
+                                    const objectStore = transaction.objectStore('inflected vocabulary');
+                                    const request = objectStore.put(this.vocabulary[this.currentWordIndex], this.currentWordIndex + 1);
+                                    request.onerror = (_)=>console.error(request.error);
                                     setTimeout((_)=>{
-                                        inp.classList.remove('shadowDesign');
-                                        inp.classList.add('redShadowDesign');
+                                        document.querySelectorAll('.selectedElement').forEach((div)=>{
+                                            div.classList.remove('selectedElement');
+                                        });
+                                        this.keys = 0;
+                                        this.inputIndex = 4;
+                                        this.selectedInput = document.querySelector('#div4');
+                                        this.selectedInput.classList.add('selectedElement');
+                                        this.startNewTrainingRound(param || 'nouns');
                                     }, 500);
                                 }
                             }
-                        }
-                        if (this.inputIndex < 18 - this.v) {
-                            this.inputIndex += 3;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                            if (event.key === 'Enter' && this.selectedInput.classList.contains('known-case')) {
-                                if (this.inputIndex < 18 - this.v) {
-                                    this.inputIndex += 3;
-                                    this.changeSelectedInput();
-                                    this.keys = this.selectedInput.childElementCount;
-                                } else if (this.inputIndex === 19 - this.v) {
-                                    this.inputIndex = 5;
-                                    this.changeSelectedInput();
-                                    this.keys = this.selectedInput.childElementCount;
-                                }
+                            return;
+                        } else if (event.key === 'ArrowUp') {
+                            if (this.inputIndex > 6) {
+                                this.inputIndex -= 3;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
                             }
-                        } else if (event.key === 'Enter' && this.inputIndex === 19 - this.v) {
-                            this.inputIndex = 5;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        } else if (event.key === 'Enter' && this.inputIndex === 20 - this.v) {
-                            this.currentWord.singular.forEach((word, i)=>{
-                                let index = 1 + (i + 1) * 3;
-                                if (this.compare(word, Object.values(this.vocabulary[this.currentWordIndex])[index % 3 - 1][Math.floor(index / 3) - 1])) {
-                                    for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
-                                        let object = this.container.children[index].children[ii];
-                                        this.successAnimation(object);
-                                    }
-                                    if (Object.values(this.result)[index % 3 - 1][Math.floor(index / 3) - 1] === undefined) {
-                                        let array = Object.values(this.result)[this.inputIndex % 3 - 1];
-                                        array[Math.floor(this.inputIndex / 3) - 1] = true;
-                                        Object.defineProperty(this.result, Object.keys(this.result)[index % 3 - 1], {
-                                            value: array
-                                        });
-                                    }
-                                } else {
-                                    for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
-                                        let object = this.container.children[index].children[ii];
-                                        this.failureAnimation(object);
-                                    }
-                                    if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
-                                        let array = Object.values(this.result)[this.inputIndex % 3 - 1];
-                                        array[Math.floor(this.inputIndex / 3) - 1] = false;
-                                        Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
-                                            value: array
-                                        });
-                                    }
-                                }
-                            });
-                            this.currentWord.plural.forEach((word, i)=>{
-                                let index = 2 + (i + 1) * 3;
-                                if (this.compare(word, Object.values(this.vocabulary[this.currentWordIndex])[index % 3 - 1][Math.floor(index / 3) - 1])) {
-                                    for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
-                                        let object = this.container.children[index].children[ii];
-                                        this.successAnimation(object);
-                                    }
-                                    if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
-                                        let array = Object.values(this.result)[this.inputIndex % 3 - 1];
-                                        array[Math.floor(this.inputIndex / 3) - 1] = true;
-                                        Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
-                                            value: array
-                                        });
-                                    }
-                                } else {
-                                    for(let ii = 0; ii < this.container.children[index].childElementCount; ii++)if (index % 3 != 0 && !this.container.children[index].classList.contains('known-case')) {
-                                        let object = this.container.children[index].children[ii];
-                                        this.failureAnimation(object);
-                                    }
-                                    if (Object.values(this.result)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1] === undefined) {
-                                        let array = Object.values(this.result)[this.inputIndex % 3 - 1];
-                                        array[Math.floor(this.inputIndex / 3) - 1] = false;
-                                        Object.defineProperty(this.result, Object.keys(this.result)[this.inputIndex % 3 - 1], {
-                                            value: array
-                                        });
-                                    }
-                                }
-                            });
-                            if (this.compareObjects(this.currentWord, this.vocabulary[this.currentWordIndex])) {
-                                this.totalAttempts += 11 - this.v / 3 * 2;
-                                let addition = this.result.singular.filter((w)=>w === true).length + this.result.plural.filter((w)=>w === true).length;
-                                this.totalPoints += addition;
-                                if (addition != 12 - this.v / 3 * 2) this.vocabulary[this.currentWordIndex].probability *= 0.8;
-                                else this.vocabulary[this.currentWordIndex].probability *= 1.2;
-                                const transaction = this.database.transaction('inflected vocabulary', 'readwrite');
-                                const objectStore = transaction.objectStore('inflected vocabulary');
-                                const request = objectStore.put(this.vocabulary[this.currentWordIndex], this.currentWordIndex + 1);
-                                request.onerror = (_)=>console.error(request.error);
-                                setTimeout((_)=>{
-                                    document.querySelectorAll('.selectedElement').forEach((div)=>{
-                                        div.classList.remove('selectedElement');
-                                    });
-                                    this.keys = 0;
-                                    this.inputIndex = 4;
-                                    this.selectedInput = document.querySelector('#div4');
-                                    this.selectedInput.classList.add('selectedElement');
-                                    this.startNewTrainingRound(param || 'nouns');
-                                }, 500);
-                            }
-                        }
-                        return;
-                    } else if (event.key === 'ArrowUp') {
-                        if (this.inputIndex > 6) {
-                            this.inputIndex -= 3;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        }
-                        return;
-                    } else if (event.key === 'Backspace') {
-                        if (this.selectedInput.lastElementChild) {
-                            this.selectedInput.lastElementChild.remove();
-                            let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                            array[Math.floor(this.inputIndex / 3) - 1] = array[Math.floor(this.inputIndex / 3) - 1].slice(0, this.keys - 1);
-                            Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
-                                value: array
-                            });
-                            this.keys--;
-                        }
-                        return;
-                    } else if (this.selectedInput.classList.contains('known-case')) return;
-                    else if (event.key == 'Tab') {
-                        if (this.tabulator) {
-                            if (this.keys + this.tabulator.length >= this.selectedInput.clientWidth / (this.selectedInput.clientHeight - parseFloat(this.selectedInput.style.padding))) this.selectedInput.childNodes.forEach((v, i)=>{
-                                this.failureAnimation(this.selectedInput.children[i]);
-                            });
-                            else {
+                            return;
+                        } else if (event.key === 'Backspace') {
+                            if (this.selectedInput.lastElementChild) {
+                                this.selectedInput.lastElementChild.remove();
                                 let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                                let n = Math.floor(this.inputIndex / 3) - 1;
-                                array[n] += this.tabulator;
+                                array[Math.floor(this.inputIndex / 3) - 1] = array[Math.floor(this.inputIndex / 3) - 1].slice(0, this.keys - 1);
                                 Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
                                     value: array
                                 });
-                                this.tabulator.split('').forEach((letter)=>{
-                                    let object = document.createElement('object');
-                                    object.data = './keys/OG_T.svg';
-                                    object.id = `key${this.keys}-inp${this.inputIndex}`;
-                                    object.style.height = `100%`;
-                                    this.selectedInput.insertAdjacentElement('beforeend', object);
-                                    object.hidden = true;
-                                    object.addEventListener('load', (_)=>{
-                                        object.hidden = false;
-                                        let svg = object.contentDocument;
-                                        svg.querySelector('#tspan7').innerHTML = letter;
-                                        this.keys++;
-                                        this.tabulatorAnimation(object);
-                                    });
-                                });
+                                this.keys--;
                             }
-                        }
-                        return;
-                    } else if (forbiddenCharacters.includes(event.key) || event.key.length > 1) return;
+                            return;
+                        } else if (this.selectedInput.classList.contains('known-case')) return;
+                        else if (event.key === '#') {
+                            this.command = '';
+                            this.commandMode = true;
+                        } else if (event.key === 'Tab') {
+                            if (this.tabulator) {
+                                if (this.keys + this.tabulator.length >= this.selectedInput.clientWidth / (this.selectedInput.clientHeight - parseFloat(this.selectedInput.style.padding))) this.selectedInput.childNodes.forEach((v, i)=>{
+                                    this.failureAnimation(this.selectedInput.children[i]);
+                                });
+                                else {
+                                    let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                                    let n = Math.floor(this.inputIndex / 3) - 1;
+                                    array[n] += this.tabulator;
+                                    Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
+                                        value: array
+                                    });
+                                    this.tabulator.split('').forEach((letter)=>{
+                                        let object = document.createElement('object');
+                                        object.data = './keys/OG_T.svg';
+                                        object.id = `key${this.keys}-inp${this.inputIndex}`;
+                                        object.style.height = `100%`;
+                                        this.selectedInput.insertAdjacentElement('beforeend', object);
+                                        object.hidden = true;
+                                        object.addEventListener('load', (_)=>{
+                                            object.hidden = false;
+                                            let svg = object.contentDocument;
+                                            svg.querySelector('#tspan7').innerHTML = letter;
+                                            this.keys++;
+                                            this.tabulatorAnimation(object);
+                                        });
+                                    });
+                                }
+                            }
+                            return;
+                        } else if (forbiddenCharacters.includes(event.key) || event.key.length > 1) return;
+                    }
                     let object = document.createElement('object');
                     object.data = './keys/OG_T.svg';
                     object.id = `key${this.keys}-inp${this.inputIndex}`;
@@ -2667,7 +2854,7 @@ class InflectVocabulary {
                     this.selectedInput.insertAdjacentElement('beforeend', object);
                     let width = object.clientHeight;
                     object.hidden = true;
-                    object.addEventListener('load', (_)=>{
+                    object.addEventListener('load', (_1)=>{
                         if (this.keys + 1 >= Math.floor(this.selectedInput.clientWidth / width)) {
                             object.remove();
                             for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
@@ -2675,12 +2862,18 @@ class InflectVocabulary {
                         }
                         object.hidden = false;
                         let svg = object.contentDocument;
-                        svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
-                        let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                        array[Math.floor(this.inputIndex / 3) - 1] += event.key;
-                        Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
-                            value: array
-                        });
+                        if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
+                        else svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
+                        if (!this.commandMode) {
+                            let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                            array[Math.floor(this.inputIndex / 3) - 1] += event.key;
+                            Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
+                                value: array
+                            });
+                        } else {
+                            this.command += event.key;
+                            (0, _.training).commandAnimation(object);
+                        }
                         this.keys++;
                         this.idleAnimation(object);
                     });
@@ -2943,8 +3136,7 @@ class InflectVocabulary {
                         });
                     });
                 });
-                this.buttonLeft.addEventListener('mouseup', (_)=>{
-                    console.log('left', this.vocabulary.map((w)=>w.singular[0]));
+                this.buttonLeftFunction = (_)=>{
                     if (this.tabMode) this.cancelTabMode();
                     let vocab = this.vocabulary.slice(0, this.wordIndex);
                     let wi = vocab.findLastIndex((w)=>w.verb === param.includes('verb'));
@@ -3095,8 +3287,9 @@ class InflectVocabulary {
                         }
                     }
                     console.log('left end', this.vocabulary.map((w)=>w.singular[0]));
-                });
-                this.buttonRight.addEventListener('mouseup', (_)=>{
+                };
+                this.buttonLeft.addEventListener('mouseup', this.buttonLeftFunction);
+                this.buttonRightFunction = (_)=>{
                     console.log('right', this.vocabulary.map((w)=>w.singular[0]));
                     if (this.tabMode) this.cancelTabMode();
                     let vocab = this.vocabulary.slice(this.wordIndex + 1);
@@ -3211,286 +3404,409 @@ class InflectVocabulary {
                         };
                     }
                     console.log('right end', this.vocabulary.map((w)=>w.singular[0]));
-                });
+                };
+                this.buttonRight.addEventListener('mouseup', this.buttonRightFunction);
                 this.keydownFunction = (event)=>{
                     let forbiddenCharacters = [
-                        '<',
                         "\xb4",
                         '`',
                         '^'
                     ];
-                    if (event.key === 'ArrowRight') {
-                        if (this.tabMode) this.cancelTabMode();
-                        if (this.inputIndex < 20 - this.v) {
-                            this.inputIndex++;
-                            if (this.inputIndex % 3 === 0) this.inputIndex++;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        }
-                        return;
-                    } else if (event.key === 'ArrowLeft') {
-                        if (this.tabMode) this.cancelTabMode();
-                        if (this.inputIndex > 4) {
-                            this.inputIndex--;
-                            if (this.inputIndex % 3 === 0) this.inputIndex--;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        }
-                        return;
-                    } else if (event.key === 'ArrowDown' || event.key === 'Enter') {
-                        if (this.tabMode) {
-                            this.cancelTabMode();
-                            if (this.inputIndex === 19) return;
-                        }
-                        if (this.inputIndex < 18 - this.v) {
-                            this.inputIndex += 3;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        } else if (event.key === 'Enter' && this.inputIndex === 19 - this.v) {
-                            this.inputIndex = 5;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        } else if (event.key === 'Enter' && this.inputIndex === 20 - this.v) {
-                            document.querySelectorAll('.editable').forEach((element)=>{
-                                element.classList.add('savedElement');
+                    if (this.commandMode) {
+                        forbiddenCharacters.push('#');
+                        if (event.key === 'Enter') {
+                            console.log('Enter');
+                            switch(this.command){
+                                case '#<':
+                                case '#<-':
+                                case '#previous':
+                                case '#prvs':
+                                case '#vorheriges':
+                                case '#voriges':
+                                case '#Vorheriges':
+                                case '#Voriges':
+                                case '#Previous':
+                                case '#Prev':
+                                case '#prev':
+                                case '#p':
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    this.buttonLeftFunction(event);
+                                    return;
+                                case '#>':
+                                case '#->':
+                                case '#next':
+                                case '#nxt':
+                                case "#n\xe4chstes":
+                                case "#N\xe4chstes":
+                                case '#Next':
+                                case '#Nxt':
+                                case '#n':
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    this.buttonRightFunction(event);
+                                    return;
+                                case '#exit':
+                                case '#quit':
+                                case '#stop':
+                                case '#home':
+                                case '#stopp':
+                                case '#beenden':
+                                case '#Stopp':
+                                case "#hauptmen\xfc":
+                                case "#Hauptmen\xfc":
+                                case '#home menu':
+                                case '#h':
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    (0, _.removeAllEventListeners)();
+                                    (0, _.home).modifyDocument();
+                                    return;
+                                default:
+                                    console.log(this.command);
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    this.changeSelectedInput();
+                                    break;
+                            }
+                            return;
+                        } else if (event.key === 'ArrowUp') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
                             });
-                            if (this.enterMode) {
-                                let vocab = this.vocabulary.slice(this.wordIndex + 1);
-                                let wi = vocab.findIndex((w)=>w.verb === param.includes('verb'));
-                                if (!this.vocabulary[wi]) {
-                                    this.vocabulary[this.wordIndex] = this.currentWord;
-                                    const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
-                                    transaction.onerror = (_)=>console.error(transaction.error);
-                                    const objectStore = transaction.objectStore(`inflected vocabulary`);
-                                    const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                    req.onerror = (_)=>console.error(req.error);
-                                    transaction.oncomplete = (_)=>{
-                                        for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
-                                        this.wordIndex++;
-                                        this.keys = 0;
-                                        this.currentWord = {
-                                            singular: this.empty(param),
-                                            plural: this.empty(param),
-                                            verb: param.includes('verb'),
-                                            probability: 1
-                                        };
-                                        for(let i = 0; i < this.container.childElementCount; i++){
-                                            if (i % 3 != 0) this.container.children[i].innerHTML = '';
-                                            this.container.children[i].classList.remove('selectedElement');
-                                        }
-                                        this.inputIndex = 4;
-                                        this.selectedInput = this.container.children[4];
-                                        this.tabCount = 0;
-                                        this.selectedInput.classList.add('selectedElement');
-                                    };
-                                } else {
-                                    this.vocabulary[this.wordIndex] = this.currentWord;
-                                    for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
-                                    const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
-                                    transaction.onerror = (_)=>console.error(transaction.error);
-                                    const objectStore = transaction.objectStore(`inflected vocabulary`);
-                                    const req = objectStore.get(this.wordIndex);
-                                    req.onerror = (_)=>console.error(req.error);
-                                    req.onsuccess = (_)=>{
-                                        const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                        idontcare.onerror = (_)=>console.log(idontcare.error);
-                                        this.wordIndex = wi;
-                                        this.currentWord = this.vocabulary[wi];
-                                        let overallIndexes = [];
-                                        let tabulatorStyle = false;
-                                        for(let i = 3; i < this.container.childElementCount; i++){
-                                            let tabulatorIndexes = [];
-                                            let n = Math.floor(i / 3) - 1;
-                                            let singular = this.currentWord.singular;
-                                            let plural = this.currentWord.plural;
-                                            if (i % 3 === 1) {
-                                                this.container.children[i].innerHTML = '';
-                                                for(let ii = 0; ii < singular[Math.floor(i / 3) - 1].length; ii++)if (singular[n].slice(ii, ii + 5) === '^tab^') {
-                                                    tabulatorStyle = !tabulatorStyle;
-                                                    ii += 4;
-                                                } else {
-                                                    let object = document.createElement('object');
-                                                    object.data = './keys/OG_T.svg';
-                                                    object.id = `key${ii}-inp${i}`;
-                                                    object.style.height = `100%`;
-                                                    this.container.children[i].insertAdjacentElement('beforeend', object);
-                                                    if (tabulatorStyle) tabulatorIndexes.push(ii);
-                                                    object.addEventListener('load', (_)=>{
-                                                        let svg = object.contentDocument;
-                                                        svg.querySelector('#tspan7').innerHTML = singular[Math.floor(i / 3) - 1].charAt(ii);
-                                                        if (overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3))) && overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3)))[1].includes(parseInt(object.id.slice(3)))) {
-                                                            this.tabulatorAnimation(object);
-                                                            object.classList.add('tabulator');
-                                                        }
-                                                    });
-                                                }
-                                                overallIndexes.push([
-                                                    i,
-                                                    tabulatorIndexes
-                                                ]);
-                                            } else if (i % 3 === 2) {
-                                                this.container.children[i].innerHTML = '';
-                                                for(let ii = 0; ii < plural[Math.floor(i / 3) - 1].length; ii++)if (plural[n].slice(ii, ii + 5) === '^tab^') {
-                                                    tabulatorStyle = !tabulatorStyle;
-                                                    ii += 4;
-                                                } else {
-                                                    let object = document.createElement('object');
-                                                    object.data = './keys/OG_T.svg';
-                                                    object.id = `key${ii}-inp${i}`;
-                                                    object.style.height = `100%`;
-                                                    this.container.children[i].insertAdjacentElement('beforeend', object);
-                                                    if (tabulatorStyle) tabulatorIndexes.push(ii);
-                                                    object.addEventListener('load', (_)=>{
-                                                        let svg = object.contentDocument;
-                                                        svg.querySelector('#tspan7').innerHTML = plural[Math.floor(i / 3) - 1].charAt(ii);
-                                                        if (overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3))) && overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3)))[1].includes(parseInt(object.id.slice(3)))) {
-                                                            this.tabulatorAnimation(object);
-                                                            object.classList.add('tabulator');
-                                                        }
-                                                    });
-                                                }
-                                                overallIndexes.push([
-                                                    i,
-                                                    tabulatorIndexes
-                                                ]);
+                            if (this.inputIndex > 6) this.inputIndex -= 3;
+                            this.changeSelectedInput();
+                            this.command = '';
+                            this.commandMode = false;
+                            return;
+                        } else if (event.key === 'ArrowDown') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
+                            });
+                            this.command = '';
+                            this.commandMode = false;
+                            if (this.inputIndex < 18 - this.v) this.inputIndex += 3;
+                            this.changeSelectedInput();
+                            return;
+                        } else if (event.key === 'ArrowLeft') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
+                            });
+                            this.command = '';
+                            this.commandMode = false;
+                            if (this.inputIndex > 4) {
+                                this.inputIndex--;
+                                if (this.inputIndex % 3 === 0) this.inputIndex--;
+                                this.changeSelectedInput();
+                            }
+                            return;
+                        } else if (event.key === 'ArrowRight') {
+                            this.command.split('').forEach((_)=>{
+                                this.selectedInput.removeChild(this.selectedInput.lastElementChild);
+                                this.keys--;
+                            });
+                            this.command = '';
+                            this.commandMode = false;
+                            if (this.inputIndex < 20 - this.v) {
+                                this.inputIndex++;
+                                if (this.inputIndex % 3 === 0) this.inputIndex++;
+                                this.changeSelectedInput();
+                            }
+                            return;
+                        } else if (event.key === 'Backspace') {
+                            if (this.selectedInput.lastElementChild) {
+                                this.selectedInput.lastElementChild.remove();
+                                this.command = this.command.slice(0, this.command.length - 1);
+                                this.keys--;
+                                if (this.command === '') this.commandMode = false;
+                            }
+                        }
+                        if (this.commandMode && (this.selectedInput.classList.contains('known-case') || forbiddenCharacters.includes(event.key) || event.key.length > 1)) return;
+                    }
+                    if (!this.commandMode) {
+                        if (event.key === 'ArrowRight') {
+                            if (this.tabMode) this.cancelTabMode();
+                            if (this.inputIndex < 20 - this.v) {
+                                this.inputIndex++;
+                                if (this.inputIndex % 3 === 0) this.inputIndex++;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            }
+                            return;
+                        } else if (event.key === 'ArrowLeft') {
+                            if (this.tabMode) this.cancelTabMode();
+                            if (this.inputIndex > 4) {
+                                this.inputIndex--;
+                                if (this.inputIndex % 3 === 0) this.inputIndex--;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            }
+                            return;
+                        } else if (event.key === 'ArrowDown' || event.key === 'Enter') {
+                            if (this.tabMode) {
+                                this.cancelTabMode();
+                                if (this.inputIndex === 19) return;
+                            }
+                            if (this.inputIndex < 18 - this.v) {
+                                this.inputIndex += 3;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            } else if (event.key === 'Enter' && this.inputIndex === 19 - this.v) {
+                                this.inputIndex = 5;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            } else if (event.key === 'Enter' && this.inputIndex === 20 - this.v) {
+                                document.querySelectorAll('.editable').forEach((element)=>{
+                                    element.classList.add('savedElement');
+                                });
+                                if (this.enterMode) {
+                                    let vocab = this.vocabulary.slice(this.wordIndex + 1);
+                                    let wi = vocab.findIndex((w)=>w.verb === param.includes('verb'));
+                                    if (!this.vocabulary[wi]) {
+                                        this.vocabulary[this.wordIndex] = this.currentWord;
+                                        const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
+                                        transaction.onerror = (_)=>console.error(transaction.error);
+                                        const objectStore = transaction.objectStore(`inflected vocabulary`);
+                                        const req = objectStore.put(this.currentWord, this.wordIndex + 1);
+                                        req.onerror = (_)=>console.error(req.error);
+                                        transaction.oncomplete = (_)=>{
+                                            for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
+                                            this.wordIndex++;
+                                            this.keys = 0;
+                                            this.currentWord = {
+                                                singular: this.empty(param),
+                                                plural: this.empty(param),
+                                                verb: param.includes('verb'),
+                                                probability: 1
+                                            };
+                                            for(let i = 0; i < this.container.childElementCount; i++){
+                                                if (i % 3 != 0) this.container.children[i].innerHTML = '';
+                                                this.container.children[i].classList.remove('selectedElement');
                                             }
-                                            this.changeSelectedInput();
-                                        }
-                                    };
-                                }
-                                this.enterMode = false;
-                            } else this.enterMode = true;
-                            const transaction = this.database.transaction('inflected vocabulary', 'readwrite');
-                            const objectStore = transaction.objectStore('inflected vocabulary');
-                            const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                            req.onerror = (_)=>console.error(req.error);
-                            setTimeout((_)=>{
-                                for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
-                            }, 250);
-                        }
-                        return;
-                    } else if (event.key === 'ArrowUp') {
-                        if (this.tabMode) this.cancelTabMode();
-                        if (this.inputIndex > 6) {
-                            this.inputIndex -= 3;
-                            this.changeSelectedInput();
-                            this.keys = this.selectedInput.childElementCount;
-                        }
-                        return;
-                    } else if (event.key === 'Backspace') {
-                        if (this.selectedInput.lastElementChild) {
-                            this.selectedInput.lastElementChild.remove();
-                            let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                            let n = Math.floor(this.inputIndex / 3) - 1;
-                            if (array[n].slice(-5) === '^tab^') {
-                                array[n] = array[n].slice(0, array[n].length - 6);
-                                if (this.tabCount > 1) this.tabCount--;
-                                this.tabMode = !this.tabMode;
-                                this.selectedInput.classList.add('tab');
-                                if (!this.tabMode) this.selectedInput.classList.remove('tab');
-                            } else array[n] = array[n].slice(0, array[n].length - 1);
-                            Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
-                                value: array
-                            });
-                            this.keys--;
-                            if (this.tabMode) this.tabulator = this.tabulator.slice(0, this.tabulator.length - 1);
-                        } else if (this.tabMode) this.cancelTabMode();
-                        return;
-                    } else if (event.key === 'Tab') {
-                        if (!this.tabMode) {
-                            if (this.tabCount >= 2) {
+                                            this.inputIndex = 4;
+                                            this.selectedInput = this.container.children[4];
+                                            this.tabCount = 0;
+                                            this.selectedInput.classList.add('selectedElement');
+                                        };
+                                    } else {
+                                        this.vocabulary[this.wordIndex] = this.currentWord;
+                                        for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
+                                        const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
+                                        transaction.onerror = (_)=>console.error(transaction.error);
+                                        const objectStore = transaction.objectStore(`inflected vocabulary`);
+                                        const req = objectStore.get(this.wordIndex);
+                                        req.onerror = (_)=>console.error(req.error);
+                                        req.onsuccess = (_)=>{
+                                            const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
+                                            idontcare.onerror = (_)=>console.log(idontcare.error);
+                                            this.wordIndex = wi;
+                                            this.currentWord = this.vocabulary[wi];
+                                            let overallIndexes = [];
+                                            let tabulatorStyle = false;
+                                            for(let i = 3; i < this.container.childElementCount; i++){
+                                                let tabulatorIndexes = [];
+                                                let n = Math.floor(i / 3) - 1;
+                                                let singular = this.currentWord.singular;
+                                                let plural = this.currentWord.plural;
+                                                if (i % 3 === 1) {
+                                                    this.container.children[i].innerHTML = '';
+                                                    for(let ii = 0; ii < singular[Math.floor(i / 3) - 1].length; ii++)if (singular[n].slice(ii, ii + 5) === '^tab^') {
+                                                        tabulatorStyle = !tabulatorStyle;
+                                                        ii += 4;
+                                                    } else {
+                                                        let object = document.createElement('object');
+                                                        object.data = './keys/OG_T.svg';
+                                                        object.id = `key${ii}-inp${i}`;
+                                                        object.style.height = `100%`;
+                                                        this.container.children[i].insertAdjacentElement('beforeend', object);
+                                                        if (tabulatorStyle) tabulatorIndexes.push(ii);
+                                                        object.addEventListener('load', (_)=>{
+                                                            let svg = object.contentDocument;
+                                                            svg.querySelector('#tspan7').innerHTML = singular[Math.floor(i / 3) - 1].charAt(ii);
+                                                            if (overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3))) && overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3)))[1].includes(parseInt(object.id.slice(3)))) {
+                                                                this.tabulatorAnimation(object);
+                                                                object.classList.add('tabulator');
+                                                            }
+                                                        });
+                                                    }
+                                                    overallIndexes.push([
+                                                        i,
+                                                        tabulatorIndexes
+                                                    ]);
+                                                } else if (i % 3 === 2) {
+                                                    this.container.children[i].innerHTML = '';
+                                                    for(let ii = 0; ii < plural[Math.floor(i / 3) - 1].length; ii++)if (plural[n].slice(ii, ii + 5) === '^tab^') {
+                                                        tabulatorStyle = !tabulatorStyle;
+                                                        ii += 4;
+                                                    } else {
+                                                        let object = document.createElement('object');
+                                                        object.data = './keys/OG_T.svg';
+                                                        object.id = `key${ii}-inp${i}`;
+                                                        object.style.height = `100%`;
+                                                        this.container.children[i].insertAdjacentElement('beforeend', object);
+                                                        if (tabulatorStyle) tabulatorIndexes.push(ii);
+                                                        object.addEventListener('load', (_)=>{
+                                                            let svg = object.contentDocument;
+                                                            svg.querySelector('#tspan7').innerHTML = plural[Math.floor(i / 3) - 1].charAt(ii);
+                                                            if (overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3))) && overallIndexes.find((indexes)=>indexes[0] === parseInt(object.parentElement.id.slice(3)))[1].includes(parseInt(object.id.slice(3)))) {
+                                                                this.tabulatorAnimation(object);
+                                                                object.classList.add('tabulator');
+                                                            }
+                                                        });
+                                                    }
+                                                    overallIndexes.push([
+                                                        i,
+                                                        tabulatorIndexes
+                                                    ]);
+                                                }
+                                                this.changeSelectedInput();
+                                            }
+                                        };
+                                    }
+                                    this.enterMode = false;
+                                } else this.enterMode = true;
+                                const transaction = this.database.transaction('inflected vocabulary', 'readwrite');
+                                const objectStore = transaction.objectStore('inflected vocabulary');
+                                const req = objectStore.put(this.currentWord, this.wordIndex + 1);
+                                req.onerror = (_)=>console.error(req.error);
+                                setTimeout((_)=>{
+                                    for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
+                                }, 250);
+                            }
+                            return;
+                        } else if (event.key === 'ArrowUp') {
+                            if (this.tabMode) this.cancelTabMode();
+                            if (this.inputIndex > 6) {
+                                this.inputIndex -= 3;
+                                this.changeSelectedInput();
+                                this.keys = this.selectedInput.childElementCount;
+                            }
+                            return;
+                        } else if (event.key === 'Backspace') {
+                            if (this.selectedInput.lastElementChild) {
+                                this.selectedInput.lastElementChild.remove();
                                 let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
                                 let n = Math.floor(this.inputIndex / 3) - 1;
-                                let index;
-                                while(array[n].search('\\^tab\\^') !== -1){
-                                    let c = array[n].search('\\^tab\\^');
-                                    if (index === undefined) index = c;
-                                    array[n] = array[n].slice(0, c) + array[n].slice(c + 5, array[n].length);
-                                }
-                                array[n] = array[n].slice(0, index) + '^tab^' + array[n].slice(index, array[n].length);
+                                if (array[n].slice(-5) === '^tab^') {
+                                    array[n] = array[n].slice(0, array[n].length - 6);
+                                    if (this.tabCount > 1) this.tabCount--;
+                                    this.tabMode = !this.tabMode;
+                                    this.selectedInput.classList.add('tab');
+                                    if (!this.tabMode) this.selectedInput.classList.remove('tab');
+                                } else array[n] = array[n].slice(0, array[n].length - 1);
                                 Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
                                     value: array
                                 });
-                                let tabulatorStyle = false;
-                                for(let i = 0; i < array[n].length; i++){
-                                    if (array[n].slice(i, i + 5) === '^tab^') {
-                                        tabulatorStyle = !tabulatorStyle;
-                                        i += 4;
-                                    } else if (this.selectedInput.children[i > index ? i - 5 : i]) {
-                                        let object = this.selectedInput.children[i > index ? i - 5 : i];
-                                        let svg = object.contentDocument;
-                                        svg.querySelector('#tspan7').innerHTML = array[n].charAt(i);
-                                        if (tabulatorStyle) {
+                                this.keys--;
+                                if (this.tabMode) this.tabulator = this.tabulator.slice(0, this.tabulator.length - 1);
+                            } else if (this.tabMode) this.cancelTabMode();
+                            return;
+                        } else if (event.key === '#') {
+                            this.command = '';
+                            this.commandMode = true;
+                        } else if (event.key === 'Tab') {
+                            if (!this.tabMode) {
+                                if (this.tabCount >= 2) {
+                                    let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                                    let n = Math.floor(this.inputIndex / 3) - 1;
+                                    let index;
+                                    while(array[n].search('\\^tab\\^') !== -1){
+                                        let c = array[n].search('\\^tab\\^');
+                                        if (index === undefined) index = c;
+                                        array[n] = array[n].slice(0, c) + array[n].slice(c + 5, array[n].length);
+                                    }
+                                    array[n] = array[n].slice(0, index) + '^tab^' + array[n].slice(index, array[n].length);
+                                    Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
+                                        value: array
+                                    });
+                                    let tabulatorStyle = false;
+                                    for(let i = 0; i < array[n].length; i++){
+                                        if (array[n].slice(i, i + 5) === '^tab^') {
+                                            tabulatorStyle = !tabulatorStyle;
+                                            i += 4;
+                                        } else if (this.selectedInput.children[i > index ? i - 5 : i]) {
+                                            let object = this.selectedInput.children[i > index ? i - 5 : i];
+                                            let svg = object.contentDocument;
+                                            svg.querySelector('#tspan7').innerHTML = array[n].charAt(i);
+                                            if (tabulatorStyle) {
+                                                this.tabulatorAnimation(object);
+                                                object.classList.add('tabulator');
+                                            } else object.classList.remove('tabulator');
+                                            this.selectedInput.children[i];
+                                        }
+                                    }
+                                    this.tabulator = array[n].slice(index + 5, array[n].length);
+                                    this.tabCount = 1;
+                                    this.tabMode = true;
+                                    this.selectedInput.classList.add('tab');
+                                } else {
+                                    this.tabMode = true;
+                                    this.selectedInput.classList.add('tab');
+                                    let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                                    array[Math.floor(this.inputIndex / 3) - 1] += "^tab^";
+                                    Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
+                                        value: array
+                                    });
+                                    this.tabCount++;
+                                }
+                            } else if (this.tabulator.length > 0) {
+                                if (Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1].slice(-5) != '^tab^') {
+                                    this.tabMode = false;
+                                    this.selectedInput.classList.remove('tab');
+                                    let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                                    array[Math.floor(this.inputIndex / 3) - 1] += "^tab^";
+                                    Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
+                                        value: array
+                                    });
+                                    this.tabCount++;
+                                } else {
+                                    let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                                    let n = Math.floor(this.inputIndex / 3) - 1;
+                                    array[n] += this.tabulator + "^tab^";
+                                    let index = array[n].search(this.tabulator);
+                                    if (index === -1) index = 0;
+                                    if (this.keys + this.tabulator.length <= Math.floor(this.selectedInput.clientWidth / (this.selectedInput.clientHeight - parseFloat(this.selectedInput.style.padding)))) for(let i = 0; i < this.tabulator.length; i++){
+                                        let object = document.createElement('object');
+                                        object.data = './keys/OG_T.svg';
+                                        object.id = `key${this.keys}-inp${this.inputIndex}`;
+                                        object.style.height = `100%`;
+                                        this.selectedInput.insertAdjacentElement('beforeend', object);
+                                        object.hidden = true;
+                                        object.addEventListener('load', (_)=>{
+                                            object.hidden = false;
                                             this.tabulatorAnimation(object);
                                             object.classList.add('tabulator');
-                                        } else object.classList.remove('tabulator');
-                                        this.selectedInput.children[i];
+                                            let svg = object.contentDocument;
+                                            svg.querySelector('#tspan7').innerHTML = this.tabulator.charAt(i);
+                                            this.tabulator.length;
+                                        });
+                                        this.keys++;
                                     }
-                                }
-                                this.tabulator = array[n].slice(index + 5, array[n].length);
-                                this.tabCount = 1;
-                                this.tabMode = true;
-                                this.selectedInput.classList.add('tab');
-                            } else {
-                                this.tabMode = true;
-                                this.selectedInput.classList.add('tab');
-                                let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                                array[Math.floor(this.inputIndex / 3) - 1] += "^tab^";
-                                Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
-                                    value: array
-                                });
-                                this.tabCount++;
-                            }
-                        } else if (this.tabulator.length > 0) {
-                            if (Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1].slice(-5) != '^tab^') {
-                                this.tabMode = false;
-                                this.selectedInput.classList.remove('tab');
-                                let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                                array[Math.floor(this.inputIndex / 3) - 1] += "^tab^";
-                                Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
-                                    value: array
-                                });
-                                this.tabCount++;
-                            } else {
-                                let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                                let n = Math.floor(this.inputIndex / 3) - 1;
-                                array[n] += this.tabulator + "^tab^";
-                                let index = array[n].search(this.tabulator);
-                                if (index === -1) index = 0;
-                                if (this.keys + this.tabulator.length <= Math.floor(this.selectedInput.clientWidth / (this.selectedInput.clientHeight - parseFloat(this.selectedInput.style.padding)))) for(let i = 0; i < this.tabulator.length; i++){
-                                    let object = document.createElement('object');
-                                    object.data = './keys/OG_T.svg';
-                                    object.id = `key${this.keys}-inp${this.inputIndex}`;
-                                    object.style.height = `100%`;
-                                    this.selectedInput.insertAdjacentElement('beforeend', object);
-                                    object.hidden = true;
-                                    object.addEventListener('load', (_)=>{
-                                        object.hidden = false;
-                                        this.tabulatorAnimation(object);
-                                        object.classList.add('tabulator');
-                                        let svg = object.contentDocument;
-                                        svg.querySelector('#tspan7').innerHTML = this.tabulator.charAt(i);
-                                        this.tabulator.length;
+                                    else {
+                                        for(let ii = 0; ii < this.keys; ii++)this.failureAnimation(this.selectedInput.children[ii]);
+                                        return;
+                                    }
+                                    Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
+                                        value: array
                                     });
-                                    this.keys++;
+                                    this.tabMode = false;
+                                    this.tabCount++;
+                                    this.selectedInput.classList.remove('tab');
                                 }
-                                else {
-                                    for(let ii = 0; ii < this.keys; ii++)this.failureAnimation(this.selectedInput.children[ii]);
-                                    return;
-                                }
-                                Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
-                                    value: array
-                                });
-                                this.tabMode = false;
-                                this.tabCount++;
-                                this.selectedInput.classList.remove('tab');
+                            } else {
+                                this.tabCount = 0;
+                                this.cancelTabMode();
                             }
-                        } else {
-                            this.tabCount = 0;
-                            this.cancelTabMode();
-                        }
-                        return;
-                    } else if (forbiddenCharacters.includes(event.key) || event.key.length > 1) return;
+                            return;
+                        } else if (forbiddenCharacters.includes(event.key) || event.key.length > 1) return;
+                    }
                     this.enterMode = false;
                     let object = document.createElement('object');
                     object.data = './keys/OG_T.svg';
@@ -3499,7 +3815,7 @@ class InflectVocabulary {
                     this.selectedInput.insertAdjacentElement('beforeend', object);
                     let width = object.clientHeight;
                     object.hidden = true;
-                    object.addEventListener('load', (_)=>{
+                    object.addEventListener('load', (_1)=>{
                         if (this.keys + 1 >= Math.floor(this.selectedInput.clientWidth / width)) {
                             object.remove();
                             for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
@@ -3507,13 +3823,20 @@ class InflectVocabulary {
                         }
                         object.hidden = false;
                         let svg = object.contentDocument;
-                        svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
+                        if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
+                        else svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
                         let n = Math.floor(this.inputIndex / 3) - 1;
                         let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                        array[n] += event.key;
-                        Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
-                            value: array
-                        });
+                        if (!this.commandMode) {
+                            let arr = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                            arr[Math.floor(this.inputIndex / 3) - 1] += event.key;
+                            Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
+                                value: array
+                            });
+                        } else {
+                            this.command += event.key;
+                            (0, _.training).commandAnimation(object);
+                        }
                         if (this.tabMode) {
                             if (array[n].slice(-6, -1) === '^tab^') this.tabulator = '';
                             this.tabulator += event.key;
@@ -3909,6 +4232,6 @@ class InflectVocabulary {
     }
 }
 
-},{"..":"1jwFz","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["iYiw7","1jwFz"], "1jwFz", "parcelRequire94c2")
+},{"..":"1jwFz","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["gpxX8","1jwFz"], "1jwFz", "parcelRequire94c2")
 
 //# sourceMappingURL=index.8e9bd240.js.map

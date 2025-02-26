@@ -1,4 +1,4 @@
-import { addVocabulary, createDiv, home, removeAllEventListeners, training } from "..";
+import { addVocabulary, createDiv, home, removeAllEventListeners } from "..";
 import { WordBundle } from "./add-vocabulary";
 
 export class VocabularyTraining {
@@ -389,7 +389,6 @@ export class VocabularyTraining {
             }
 
             if (!this.commandMode) {
-                //TODO: space styling: style empty lines in green when right and red when wrong
                 if ((event.key === 'Enter' || event.key === 'ArrowDown') && !mode) {
                     if (this.currentWord && !isNaN(this.currentWordIndex) && event.key === 'Enter') {
                         if (
