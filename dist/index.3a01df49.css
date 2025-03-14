@@ -1,14 +1,10 @@
-.bg {
-  box-sizing: border-box;
-  background-color: #0e062e;
-  border: none;
-}
-
-.inp {
+.addVocabularyInput {
   box-sizing: border-box;
   background-color: #06011b;
   border: none;
+  border-left: .5vw solid #0000;
   flex-direction: row;
+  height: 9.28571vh;
   transition: box-shadow .25s;
   display: flex;
 }
@@ -22,6 +18,13 @@
 .trainingContainer, .addVocabularyContainer, .trainingContainer, .inflectVocabularyContainer {
   width: 100vw;
   height: 65vh;
+}
+
+.addVocabularyContainer {
+  grid-template-rows: auto auto auto auto;
+  grid-template-columns: auto;
+  gap: 9.28571vh;
+  display: grid;
 }
 
 .trainingIconPlaceholder, .addVocabularyIconPlaceholder, .inflectVocabularyIconPlaceholder {
@@ -55,12 +58,17 @@
   border: none;
   justify-content: center;
   align-items: center;
-  width: 10%;
-  height: 100%;
+  width: 12vh;
+  height: 11vh;
   font-size: 9vh;
   transition: background-color .25s;
   display: flex;
-  box-shadow: inset 0 0 .5vh .5vh #000;
+}
+
+.navButton:hover {
+  color: #696969;
+  background-color: #fff;
+  box-shadow: 0 0 .5vh .5vh #fff;
 }
 
 #addVocabularyIcon {
@@ -73,12 +81,13 @@
 }
 
 .selected {
-  margin: .75vh;
+  width: 99.5vw;
+  margin-left: .25vw;
+  margin-right: .25vw;
   box-shadow: 0 0 .5vh .5vh #8a2be2;
 }
 
 .shadow {
-  margin: 1vh;
   box-shadow: 0 0 1vh 1vh #2be231;
 }
 

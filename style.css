@@ -1,24 +1,13 @@
 /* add vocabulary */
-
-.bg
-
-/*background*/
-    {
-    background-color: #0e062e;
-    box-sizing: border-box;
-    border: none;
-}
-
-.inp
-
-/*input*/
-    {
+.addVocabularyInput {
     background-color: #06011b;
     box-sizing: border-box;
     border: none;
     transition: box-shadow 250ms;
     display: flex;
     flex-direction: row;
+    height: 9.28571428571vh;
+    border-left: 0.5vw solid transparent;
 }
 
 .trainingBody,
@@ -35,6 +24,13 @@
 .inflectVocabularyContainer {
     height: 65vh;
     width: 100vw;
+}
+
+.addVocabularyContainer {
+    display: grid;
+    grid-template-columns: auto;
+    grid-template-rows: auto auto auto auto;
+    gap: 9.28571428571vh;
 }
 
 .trainingIconPlaceholder,
@@ -70,14 +66,19 @@
     background-color: rgb(210, 210, 210);
     transition: background-color 250ms;
     color: #0e062e;
-    height: 100%;
-    width: 10%;
+    height: 11vh;
+    width: 12vh;
     font-size: 9vh;
-    box-shadow: inset 0 0 0.5vh 0.5vh #000000;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.navButton:hover {
+    background-color: white;
+    box-shadow: #ffffff 0 0 0.5vh 0.5vh;
+    color: #696969; 
 }
 
 #addVocabularyIcon {
@@ -91,11 +92,12 @@
 
 .selected {
     box-shadow: 0 0 0.5vh 0.5vh rgba(138, 43, 226, 1);
-    margin: 0.75vh;
+    width: 99.5vw;
+    margin-left: 0.25vw;
+    margin-right: 0.25vw;
 }
 
 .shadow {
-    margin: 1vh;
     box-shadow: 0 0 1vh 1vh rgba(43, 226, 49, 1);
 }
 
@@ -315,7 +317,8 @@ input.checkbox {
 
 #version {
     height: 3.75vh;
-    width: auto;;
+    width: auto;
+    ;
     justify-self: right !important;
     align-self: flex-end !important;
     margin-bottom: 1vh;

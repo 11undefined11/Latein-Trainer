@@ -1,4 +1,4 @@
-import { createDiv, home, removeAllEventListeners, training } from "..";
+import { createDiv, home, removeAllEventListeners, showVocabulary, training } from "..";
 
 export class AddVocabulary {
     container: HTMLDivElement;
@@ -15,11 +15,25 @@ export class AddVocabulary {
     enterMode = false;
     commandMode = false;
     command = '';
+    padding: [number, number, number, number] = [undefined, undefined, undefined, undefined]
+
+    inputIndex = 0;
+    keys = 0;
+    selectedInput: HTMLDivElement;
+    currentWord: WordBundle = {
+        latinWord: '',
+        inflections: '',
+        germanTranslation: '',
+        relatedForeignWords: '',
+        selected: true,
+        probability: 1
+    }
 
     keyDownFunction: EventListenerOrEventListenerObject;
     maxCharacters: number;
     buttonLeftFunction: (_: any) => void;
     buttonRightFunction: (_: any) => void;
+    timeout: number;
 
     constructor() {
         const request = window.indexedDB.open('Vocabulary', 1);
@@ -108,7 +122,6 @@ export class AddVocabulary {
                 this.vocabulary = req.result;
                 this.wordIndex = this.vocabulary.length;
 
-
                 this.container = document.querySelector('#container');
                 this.iconPlaceholder = document.querySelector('#icon-placeholder');
                 this.navbar = document.querySelector('#navbar');
@@ -133,14 +146,13 @@ export class AddVocabulary {
                 addVocabularyIcon.id = 'addVocabularyIcon';
                 this.iconPlaceholder.insertAdjacentElement('beforeend', addVocabularyIcon);
 
-
                 this.container.classList.add('addVocabularyContainer');
 
-                let classes = 'inp bg inp bg inp bg inp'.split(' ');
-                for (let i = 0; i < classes.length; i++) {
-                    let div = createDiv(`div${i}`, `${classes[i]}`, `100%`, `${100 / classes.length}%`);
+                for (let i = 0; i < 4; i++) {
+                    let div = createDiv(`div${i}`, 'addVocabularyInput');
                     this.container.appendChild(div);
-                    div.style.padding = `${0.05 * div.offsetHeight}px`;
+                    this.padding[i] = 0.05 * div.offsetHeight;
+                    div.style.padding = `${0.05 * div.offsetHeight}px 0.5vw`;
                 }
 
                 this.navbar.classList.add('addVocabularyNavbar');
@@ -177,41 +189,17 @@ export class AddVocabulary {
     }
 
     type(): void {
-        let inputs = [0, 2, 4, 6];
-        let inputIndex = 0;
-        let keys = 0;
-        let selectedInput: HTMLDivElement;
-        let currentWord: WordBundle = {
-            latinWord: '',
-            inflections: '',
-            germanTranslation: '',
-            relatedForeignWords: '',
-            selected: true,
-            probability: 1
-        }
-
-        for (let i = 0; i < this.container.childElementCount; i += 2) {
+        for (let i = 0; i < this.container.childElementCount; i++) {
             this.container.children[i].addEventListener('click', _ => {
-                for (let ii = 0; ii < this.container.childElementCount; ii += 2) {
-                    if (this.container.children[ii] === this.container.children[i]) {
-                        inputIndex = ii / 2;
-                        selectedInput = <HTMLDivElement>this.container.children[ii];
-                        selectedInput.classList.add('selected');
-                        keys = selectedInput.childElementCount;
-                    } else {
-                        this.container.children[ii].classList.remove('selected');
-                    }
-                }
+                this.inputIndex = i;
+                this.changeSelectedInput();
+                this.enterMode = false;
             });
         };
 
-        this.container.children[inputs[inputIndex]].classList.add('selected');
-        selectedInput = <HTMLDivElement>this.container.children[inputs[inputIndex]];
-
-        let object = selectedInput.appendChild(createDiv('temporary'));
-        let width = selectedInput.offsetHeight - (selectedInput.clientHeight - object.clientHeight) - parseFloat(selectedInput.style.padding);
-        this.maxCharacters = Math.floor(window.innerWidth / width);
-        object.remove();
+        this.container.children[this.inputIndex].classList.add('selected');
+        this.selectedInput = <HTMLDivElement>this.container.children[this.inputIndex];
+        this.changeSelectedInput();
 
         this.homeButton.addEventListener('click', _ => {
             removeAllEventListeners();
@@ -219,28 +207,28 @@ export class AddVocabulary {
         });
 
         this.buttonLeft.addEventListener('mousedown', _ => {
-            for (let i = 0; i < this.container.childElementCount; i += 2) {
+            for (let i = 0; i < this.container.childElementCount; i++) {
                 this.container.children[i].classList.add('shadow');
                 this.buttonLeft.classList.add('clicked');
             }
         })
 
         this.buttonRight.addEventListener('mousedown', _ => {
-            for (let i = 0; i < this.container.childElementCount; i += 2) {
+            for (let i = 0; i < this.container.childElementCount; i++) {
                 this.container.children[i].classList.add('shadow');
                 this.buttonRight.classList.add('clicked');
             }
         })
 
         this.buttonLeft.addEventListener('mouseout', _ => {
-            for (let i = 0; i < this.container.childElementCount; i += 2) {
+            for (let i = 0; i < this.container.childElementCount; i++) {
                 this.container.children[i].classList.remove('shadow');
                 this.buttonLeft.classList.remove('clicked');
             }
         })
 
         this.buttonRight.addEventListener('mouseout', _ => {
-            for (let i = 0; i < this.container.childElementCount; i += 2) {
+            for (let i = 0; i < this.container.childElementCount; i++) {
                 this.container.children[i].classList.remove('shadow');
                 this.buttonRight.classList.remove('clicked');
             }
@@ -249,23 +237,23 @@ export class AddVocabulary {
         this.buttonLeftFunction = _ => {
             if (this.vocabulary[this.wordIndex - 1]) {
                 if (
-                    Object.values(currentWord).filter((value) => value === '').length === 4
+                    Object.values(this.currentWord).filter((value) => value === '').length === 4
                     && this.wordIndex === this.vocabulary.length
                 ) {
-                    for (let i = 0; i < this.container.childElementCount; i += 2) {
+                    for (let i = 0; i < this.container.childElementCount; i++) {
                         this.container.children[i].classList.remove('shadow');
                     }
 
                     this.wordIndex--;
-                    currentWord = this.vocabulary[this.wordIndex];
+                    this.currentWord = this.vocabulary[this.wordIndex];
 
-                    for (let i = 0; i < this.container.childElementCount; i += 2) {
-                        let value = Object.values(currentWord)[i / 2];
+                    for (let i = 0; i < this.container.childElementCount; i++) {
+                        let value = Object.values(this.currentWord)[i];
                         this.container.children[i].innerHTML = '';
                         for (let ii = 0; ii < value.length; ii++) {
                             let object = document.createElement('object');
                             object.data = './keys/OG_T.svg';
-                            object.id = `key${ii}-inp${i / 2}`;
+                            object.id = `key${ii}-inp${i}`;
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
 
@@ -276,7 +264,7 @@ export class AddVocabulary {
                         }
                     }
                 } else {
-                    this.vocabulary[this.wordIndex] = currentWord;
+                    this.vocabulary[this.wordIndex] = this.currentWord;
 
                     const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                     transaction.onerror = _ => console.error(transaction.error);
@@ -284,23 +272,23 @@ export class AddVocabulary {
                     const req = objectStore.get(this.wordIndex);
                     req.onerror = _ => console.error(req.error);
                     req.onsuccess = _ => {
-                        for (let i = 0; i < this.container.childElementCount; i += 2) {
+                        for (let i = 0; i < this.container.childElementCount; i++) {
                             this.container.children[i].classList.remove('shadow');
                         }
 
-                        const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
+                        const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
                         idontcare.onerror = _ => console.error(idontcare.error);
 
                         this.wordIndex--;
 
-                        currentWord = this.vocabulary[this.wordIndex];
-                        for (let i = 0; i < this.container.childElementCount; i += 2) {
-                            let value = Object.values(currentWord)[i / 2];
+                        this.currentWord = this.vocabulary[this.wordIndex];
+                        for (let i = 0; i < this.container.childElementCount; i++) {
+                            let value = Object.values(this.currentWord)[i];
                             this.container.children[i].innerHTML = '';
                             for (let ii = 0; ii < value.length; ii++) {
                                 let object = document.createElement('object');
                                 object.data = './keys/OG_T.svg';
-                                object.id = `key${ii}-inp${i / 2}`;
+                                object.id = `key${ii}-inp${i}`;
                                 object.style.height = `100%`;
                                 this.container.children[i].insertAdjacentElement('beforeend', object);
 
@@ -319,21 +307,21 @@ export class AddVocabulary {
         this.buttonRightFunction = _ => {
             this.buttonRight.classList.remove('clicked');
             if (!this.vocabulary[this.wordIndex + 1]) {
-                this.vocabulary[this.wordIndex] = currentWord;
+                this.vocabulary[this.wordIndex] = this.currentWord;
 
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                 transaction.onerror = _ => console.error(transaction.error);
                 const objectStore = transaction.objectStore(`vocabulary`);
-                const req = objectStore.put(currentWord, this.wordIndex + 1);
+                const req = objectStore.put(this.currentWord, this.wordIndex + 1);
                 req.onerror = _ => console.error(req.error)
                 transaction.oncomplete = _ => {
-                    for (let i = 0; i < this.container.childElementCount; i += 2) {
+                    for (let i = 0; i < this.container.childElementCount; i++) {
                         this.container.children[i].classList.remove('shadow');
                     }
 
                     this.wordIndex++;
-                    keys = 0;
-                    currentWord = {
+                    this.keys = 0;
+                    this.currentWord = {
                         latinWord: '',
                         inflections: '',
                         germanTranslation: '',
@@ -342,19 +330,23 @@ export class AddVocabulary {
                         probability: 1
                     };
 
-                    for (let i = 0; i < this.container.childElementCount; i += 2) {
+                    for (let i = 0; i < this.container.childElementCount; i++) {
                         this.container.children[i].innerHTML = '';
 
-                        inputIndex = 0;
-                        selectedInput = <HTMLDivElement>this.container.children[0];
-                        selectedInput.classList.add('selected');
-                        if (i != 0) this.container.children[i].classList.remove('selected');
+                        this.inputIndex = 0;
+                        this.selectedInput = <HTMLDivElement>this.container.children[0];
+                        this.selectedInput.classList.add('selected');
+                        if (i != 0) {
+                            let div = <HTMLDivElement>this.container.children[i];
+                            div.classList.remove('selected');
+                            div.style.padding = `${this.padding[i]}px 0.5vw`;
+                        }
                     }
                 }
             } else {
-                this.vocabulary[this.wordIndex] = currentWord;
+                this.vocabulary[this.wordIndex] = this.currentWord;
 
-                for (let i = 0; i < this.container.childElementCount; i += 2) {
+                for (let i = 0; i < this.container.childElementCount; i++) {
                     this.container.children[i].classList.remove('shadow');
                 }
 
@@ -364,19 +356,19 @@ export class AddVocabulary {
                 const req = objectStore.get(this.wordIndex);
                 req.onerror = _ => console.error(req.error);
                 req.onsuccess = _ => {
-                    const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
-                    idontcare.onerror = _ => console.log(idontcare.error);
+                    const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
+                    idontcare.onerror = _ => console.error(idontcare.error);
 
                     this.wordIndex++;
-                    currentWord = this.vocabulary[this.wordIndex];
+                    this.currentWord = this.vocabulary[this.wordIndex];
 
-                    for (let i = 0; i < this.container.childElementCount; i += 2) {
-                        let value = Object.values(currentWord)[i / 2];
+                    for (let i = 0; i < this.container.childElementCount; i++) {
+                        let value = Object.values(this.currentWord)[i];
                         this.container.children[i].innerHTML = '';
                         for (let ii = 0; ii < value.length; ii++) {
                             let object = document.createElement('object');
                             object.data = './keys/OG_T.svg';
-                            object.id = `key${ii}-inp${i / 2}`;
+                            object.id = `key${ii}-inp${i}`;
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
 
@@ -394,9 +386,39 @@ export class AddVocabulary {
 
         this.keyDownFunction = (event: KeyboardEvent) => {
             let forbiddenCharacters = ['´', '`', '^'];
-
             if (this.commandMode) {
                 if (event.key === 'Enter') {
+                    if (this.command.endsWith('%')) {
+                        if (this.command.startsWith('#p-')) {
+                            let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                            if (percentage >= 0 && percentage <= 100) {
+                                this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.85), 1));
+                                this.paddingAnimation(this.selectedInput);
+                                this.command.split('').forEach(_ => {
+                                    this.selectedInput.lastElementChild.remove();
+                                    this.keys--;
+                                });
+
+                                this.command = '';
+                                this.commandMode = false;
+                                return;
+                            }
+                        } else if (this.command.startsWith('#p+')) {
+                            let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                            if (percentage >= 0) {
+                                this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.85), 1));
+                                this.paddingAnimation(this.selectedInput);
+                                this.command.split('').forEach(_ => {
+                                    this.selectedInput.lastElementChild.remove();
+                                    this.keys--;
+                                });
+                                this.command = '';
+                                this.commandMode = false;
+                                return;
+                            }
+                        }
+                    }
+
                     switch (this.command) {
                         case '#<':
                         case '#<-':
@@ -409,7 +431,6 @@ export class AddVocabulary {
                         case '#Previous':
                         case '#Prev':
                         case '#prev':
-                        case '#p':
                             this.command = '';
                             this.commandMode = false;
                             this.buttonLeftFunction(event);
@@ -422,7 +443,6 @@ export class AddVocabulary {
                         case '#Nächstes':
                         case '#Next':
                         case '#Nxt':
-                        case '#n':
                             this.command = '';
                             this.commandMode = false;
                             this.buttonRightFunction(event);
@@ -445,8 +465,8 @@ export class AddVocabulary {
                             return;
                         default: {
                             this.command.split('').forEach(_ => {
-                                selectedInput.lastElementChild.remove();
-                                keys--;
+                                this.selectedInput.lastElementChild.remove();
+                                this.keys--;
                             });
                         }
                     }
@@ -456,48 +476,51 @@ export class AddVocabulary {
                     return;
                 } else if (event.key === 'ArrowUp') {
                     this.command.split('').forEach(_ => {
-                        selectedInput.lastElementChild.remove();
-                        keys--;
+                        this.selectedInput.lastElementChild.remove();
+                        this.keys--;
                     });
 
                     this.command = '';
                     this.commandMode = false;
 
-                    if (inputIndex > 0) {
-                        inputIndex--;
-                        selectedInput.classList.remove('selected');
-                        selectedInput = <HTMLDivElement>this.container.children[inputs[inputIndex]];
-                        keys = selectedInput.childElementCount;
+                    if (this.inputIndex > 0) {
+                        this.inputIndex--;
+                        this.selectedInput.classList.remove('selected');
+                        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.5vw`;
+                        this.selectedInput = <HTMLDivElement>this.container.children[this.inputIndex];
+                        this.keys = this.selectedInput.childElementCount;
                     }
-                    selectedInput.classList.add('selected');
+                    this.selectedInput.classList.add('selected');
                     return;
                 } else if (event.key === 'ArrowDown') {
                     this.command.split('').forEach(_ => {
-                        selectedInput.lastElementChild.remove();
-                        keys--;
+                        this.selectedInput.lastElementChild.remove();
+                        this.keys--;
                     });
 
                     this.command = '';
                     this.commandMode = false;
 
-                    if (inputIndex + 1 < 4) {
-                        inputIndex++;
-                        selectedInput.classList.remove('selected');
-                        selectedInput = <HTMLDivElement>this.container.children[inputs[inputIndex]];
-                        keys = selectedInput.childElementCount;
+                    if (this.inputIndex + 1 < 4) {
+                        this.inputIndex++;
+                        this.selectedInput.classList.remove('selected');
+                        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.5vw`;
+                        this.selectedInput = <HTMLDivElement>this.container.children[this.inputIndex];
+                        this.keys = this.selectedInput.childElementCount;
                     }
-                    selectedInput.classList.add('selected');
+                    this.selectedInput.classList.add('selected');
                     return;
                 } else if (event.key === 'Backspace') {
-                    if (selectedInput.lastElementChild) {
-                        selectedInput.lastElementChild.remove();
+                    if (this.selectedInput.lastElementChild) {
+                        this.selectedInput.lastElementChild.remove();
                         this.command = this.command.slice(0, this.command.length - 1);
-                        keys--;
+                        this.keys--;
 
                         if (this.command === '') {
                             this.commandMode = false;
                         }
                     }
+                    return;
                 }
 
                 if (
@@ -509,56 +532,48 @@ export class AddVocabulary {
                     return;
                 }
             }
-            //TODO: enable commands in add vocabulary
+            
             if (!this.commandMode) {
                 if (event.key === 'Backspace') {
-                    if (selectedInput.lastElementChild) {
-                        selectedInput.lastElementChild.remove();
+                    if (this.selectedInput.lastElementChild) {
+                        this.selectedInput.lastElementChild.remove();
 
                         Object.defineProperty(
-                            currentWord,
-                            Object.keys(currentWord)[inputIndex],
-                            { value: Object.values(currentWord)[inputIndex].slice(0, keys - 1) }
+                            this.currentWord,
+                            Object.keys(this.currentWord)[this.inputIndex],
+                            { value: Object.values(this.currentWord)[this.inputIndex].slice(0, this.keys - 1) }
                         );
 
-                        keys--;
+                        this.keys--;
                     }
                     return;
                 } else if (event.key === 'Enter' || event.key === 'ArrowDown') {
-                    if (inputIndex + 1 < 4) {
-                        inputIndex++;
-                        selectedInput = <HTMLDivElement>this.container.children[inputs[inputIndex]];
-                        for (let i = 0; i < this.container.childElementCount; i++) {
-                            if (this.container.children[i] != selectedInput) {
-                                this.container.children[i].classList.remove('selected');
-                            } else {
-                                selectedInput.classList.add('selected');
-                                keys = selectedInput.childElementCount;
-                            }
-                        }
+                    if (this.inputIndex + 1 < 4) {
+                        this.inputIndex++;
+                        this.changeSelectedInput();
                     } else {
-                        for (let i = 0; i < this.container.childElementCount; i += 2) {
+                        for (let i = 0; i < this.container.childElementCount; i++) {
                             this.container.children[i].classList.add('shadow');
                         }
 
                         if (this.enterMode) {
                             this.buttonRight.classList.remove('clicked');
                             if (!this.vocabulary[this.wordIndex + 1]) {
-                                this.vocabulary[this.wordIndex] = currentWord;
+                                this.vocabulary[this.wordIndex] = this.currentWord;
 
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                                 transaction.onerror = _ => console.error(transaction.error);
                                 const objectStore = transaction.objectStore(`vocabulary`);
-                                const req = objectStore.put(currentWord, this.wordIndex + 1);
+                                const req = objectStore.put(this.currentWord, this.wordIndex + 1);
                                 req.onerror = _ => console.error(req.error)
                                 transaction.oncomplete = _ => {
-                                    for (let i = 0; i < this.container.childElementCount; i += 2) {
+                                    for (let i = 0; i < this.container.childElementCount; i++) {
                                         this.container.children[i].classList.remove('shadow');
                                     }
 
                                     this.wordIndex++;
-                                    keys = 0;
-                                    currentWord = {
+                                    this.keys = 0;
+                                    this.currentWord = {
                                         latinWord: '',
                                         inflections: '',
                                         germanTranslation: '',
@@ -567,19 +582,23 @@ export class AddVocabulary {
                                         probability: 1
                                     };
 
-                                    for (let i = 0; i < this.container.childElementCount; i += 2) {
+                                    for (let i = 0; i < this.container.childElementCount; i++) {
                                         this.container.children[i].innerHTML = '';
 
-                                        inputIndex = 0;
-                                        selectedInput = <HTMLDivElement>this.container.children[0];
-                                        selectedInput.classList.add('selected');
-                                        if (i != 0) this.container.children[i].classList.remove('selected');
+                                        this.inputIndex = 0;
+                                        this.selectedInput = <HTMLDivElement>this.container.children[0];
+                                        this.selectedInput.classList.add('selected');
+                                        if (i != 0) {
+                                            let div = <HTMLDivElement>this.container.children[i];
+                                            div.classList.remove('selected');
+                                            div.style.padding = `${this.padding[i]}px 0.5vw`;
+                                        };
                                     }
                                 }
                             } else {
-                                this.vocabulary[this.wordIndex] = currentWord;
+                                this.vocabulary[this.wordIndex] = this.currentWord;
 
-                                for (let i = 0; i < this.container.childElementCount; i += 2) {
+                                for (let i = 0; i < this.container.childElementCount; i++) {
                                     this.container.children[i].classList.remove('shadow');
                                 }
 
@@ -589,19 +608,19 @@ export class AddVocabulary {
                                 const req = objectStore.get(this.wordIndex);
                                 req.onerror = _ => console.error(req.error);
                                 req.onsuccess = _ => {
-                                    const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
-                                    idontcare.onerror = _ => console.log(idontcare.error);
+                                    const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
+                                    idontcare.onerror = _ => console.error(idontcare.error);
 
                                     this.wordIndex++;
-                                    currentWord = this.vocabulary[this.wordIndex];
+                                    this.currentWord = this.vocabulary[this.wordIndex];
 
-                                    for (let i = 0; i < this.container.childElementCount; i += 2) {
-                                        let value = Object.values(currentWord)[i / 2];
+                                    for (let i = 0; i < this.container.childElementCount; i++) {
+                                        let value = Object.values(this.currentWord)[i];
                                         this.container.children[i].innerHTML = '';
                                         for (let ii = 0; ii < value.length; ii++) {
                                             let object = document.createElement('object');
                                             object.data = './keys/OG_T.svg';
-                                            object.id = `key${ii}-inp${i / 2}`;
+                                            object.id = `key${ii}-inp${i}`;
                                             object.style.height = `100%`;
                                             this.container.children[i].insertAdjacentElement('beforeend', object);
 
@@ -621,11 +640,11 @@ export class AddVocabulary {
                         const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                         transaction.onerror = _ => console.error(transaction.error);
                         const objectStore = transaction.objectStore(`vocabulary`);
-                        const req = objectStore.put(currentWord, this.wordIndex + 1);
+                        const req = objectStore.put(this.currentWord, this.wordIndex + 1);
                         req.onerror = _ => console.error(req.error);
 
                         setTimeout(_ => {
-                            for (let i = 0; i < this.container.childElementCount; i += 2) {
+                            for (let i = 0; i < this.container.childElementCount; i++) {
                                 this.container.children[i].classList.remove('shadow');
                             }
                         }, 250);
@@ -633,16 +652,9 @@ export class AddVocabulary {
 
                     return;
                 } else if (event.key === 'ArrowUp') {
-                    if (inputIndex > 0) inputIndex--;
-                    selectedInput = <HTMLDivElement>this.container.children[inputs[inputIndex]];
-                    for (let i = 0; i < this.container.childElementCount; i++) {
-                        if (this.container.children[i] != selectedInput) {
-                            this.container.children[i].classList.remove('selected');
-                        } else {
-                            selectedInput.classList.add('selected');
-                            keys = selectedInput.childElementCount;
-                        }
-                    }
+                    if (this.inputIndex > 0) this.inputIndex--;
+                    this.changeSelectedInput();
+                    this.enterMode = false;
                     return;
                 } else if (event.key === '#') {
                     this.command = '';
@@ -654,17 +666,17 @@ export class AddVocabulary {
 
             let object = document.createElement('object');
             object.data = './keys/OG_T.svg';
-            object.id = `key${keys}-inp${inputIndex}`;
+            object.id = `key${this.keys}-inp${this.inputIndex}`;
             object.style.height = `100%`;
-            selectedInput.insertAdjacentElement('beforeend', object);
+            this.selectedInput.insertAdjacentElement('beforeend', object);
             let width = object.clientHeight;
             object.hidden = true;
 
             object.addEventListener('load', _ => {
-                if (keys >= Math.floor(window.innerWidth / width)) {
+                if (this.keys >= Math.floor(window.innerWidth / width)) {
                     object.remove();
-                    for (let i = 0; i < keys; i++) {
-                        this.failureAnimation(<HTMLObjectElement>selectedInput.children[i]);
+                    for (let i = 0; i < this.keys; i++) {
+                        this.failureAnimation(<HTMLObjectElement>this.selectedInput.children[i]);
                     }
                     return;
                 }
@@ -673,15 +685,17 @@ export class AddVocabulary {
                 let svg = object.contentDocument;
                 if (event.key === '<') {
                     svg.querySelector('#tspan7').innerHTML = '&lt;';
+                } else if (event.key === '&') {
+                    svg.querySelector('#tspan7').innerHTML = '&amp;';
                 } else {
                     svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
                 }
 
                 if (!this.commandMode) {
                     Object.defineProperty(
-                        currentWord,
-                        Object.keys(currentWord)[inputIndex],
-                        { value: Object.values(currentWord)[inputIndex] + event.key.charAt(0) }
+                        this.currentWord,
+                        Object.keys(this.currentWord)[this.inputIndex],
+                        { value: Object.values(this.currentWord)[this.inputIndex] + event.key.charAt(0) }
                     );
                     this.idleAnimation(object);
                 } else {
@@ -689,12 +703,30 @@ export class AddVocabulary {
                     training.commandAnimation(object);
                 }
 
-                keys++;
+                this.keys++;
             });
         }
 
         document.addEventListener('keydown', this.keyDownFunction);
 
+    }
+
+    changeSelectedInput(): void {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+        }
+
+        document.querySelectorAll('.selected').forEach((elem: HTMLDivElement) => {
+            elem.classList.remove('selected');
+            elem.style.padding = `${this.padding[parseInt(elem.id.charAt(3))]}px 0.5vw`;
+            elem.style.border = 'none';
+            elem.style.transition = 'none';
+        });
+        this.selectedInput = <HTMLDivElement>this.container.children[this.inputIndex];
+        this.selectedInput.classList.add('selected');
+        this.keys = this.selectedInput.childElementCount;
+        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
+        this.paddingAnimation(this.selectedInput);
     }
 
     failureAnimation(object: HTMLObjectElement): void {
@@ -741,6 +773,40 @@ export class AddVocabulary {
 
         rect.animate(animationKeyframes, animationOptions);
         text.animate(animationKeyframes, animationOptions);
+    }
+
+    paddingAnimation(input: HTMLDivElement): void {
+        let id = parseInt(input.id.charAt(3));
+        let marginLeft = parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2));
+        let borderLeft = 0.005 * input.offsetWidth - marginLeft;
+
+        input.style.padding = '0';
+        input.style.willChange = 'border-width';
+        input.style.borderTopWidth = `calc(${this.padding[id]}px)`;
+        input.style.borderRightWidth = `${borderLeft}px`;
+        input.style.borderBottomWidth = `calc(${this.padding[id]}px)`;
+        input.style.borderLeftWidth = `${borderLeft}px`;
+        input.style.borderStyle = 'solid';
+        input.style.borderColor = '#12dada';
+        input.style.transition = 'none';
+        input.style.paddingLeft = 0.005 * window.innerWidth - (parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2)) + parseFloat(window.getComputedStyle(input).borderLeftWidth.slice(0, -2))) + 'px';
+
+
+        setTimeout(_ => {
+            input.style.borderColor = '#06011b';
+            input.style.transition = 'none';
+            input.style.transition = "border-color 1.5s";
+
+            this.timeout = setTimeout(_ => {
+                if (input.classList.contains('selected')) {
+                    input.style.padding = `${this.padding[id]}px 0.25vw`;
+                } else {
+                    input.style.padding = `${this.padding[id]}px 0.5vw`;
+                }
+
+                input.style.border = 'none';
+            }, 1500)
+        }, 1);
     }
 }
 

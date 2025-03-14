@@ -647,6 +647,22 @@ class AddVocabulary {
         this.enterMode = false;
         this.commandMode = false;
         this.command = '';
+        this.padding = [
+            undefined,
+            undefined,
+            undefined,
+            undefined
+        ];
+        this.inputIndex = 0;
+        this.keys = 0;
+        this.currentWord = {
+            latinWord: '',
+            inflections: '',
+            germanTranslation: '',
+            relatedForeignWords: '',
+            selected: true,
+            probability: 1
+        };
         const request = window.indexedDB.open('Vocabulary', 1);
         request.addEventListener('error', (_)=>{
             console.error('There is an error. Have fun fixing it. Details:' + request.error);
@@ -760,11 +776,11 @@ class AddVocabulary {
                 addVocabularyIcon.id = 'addVocabularyIcon';
                 this.iconPlaceholder.insertAdjacentElement('beforeend', addVocabularyIcon);
                 this.container.classList.add('addVocabularyContainer');
-                let classes = 'inp bg inp bg inp bg inp'.split(' ');
-                for(let i = 0; i < classes.length; i++){
-                    let div = (0, _.createDiv)(`div${i}`, `${classes[i]}`, `100%`, `${100 / classes.length}%`);
+                for(let i = 0; i < 4; i++){
+                    let div = (0, _.createDiv)(`div${i}`, 'addVocabularyInput');
                     this.container.appendChild(div);
-                    div.style.padding = `${0.05 * div.offsetHeight}px`;
+                    this.padding[i] = 0.05 * div.offsetHeight;
+                    div.style.padding = `${0.05 * div.offsetHeight}px 0.5vw`;
                 }
                 this.navbar.classList.add('addVocabularyNavbar');
                 this.buttonLeft = document.createElement('button');
@@ -794,78 +810,55 @@ class AddVocabulary {
         });
     }
     type() {
-        let inputs = [
-            0,
-            2,
-            4,
-            6
-        ];
-        let inputIndex = 0;
-        let keys = 0;
-        let selectedInput;
-        let currentWord = {
-            latinWord: '',
-            inflections: '',
-            germanTranslation: '',
-            relatedForeignWords: '',
-            selected: true,
-            probability: 1
-        };
-        for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].addEventListener('click', (_)=>{
-            for(let ii = 0; ii < this.container.childElementCount; ii += 2)if (this.container.children[ii] === this.container.children[i]) {
-                inputIndex = ii / 2;
-                selectedInput = this.container.children[ii];
-                selectedInput.classList.add('selected');
-                keys = selectedInput.childElementCount;
-            } else this.container.children[ii].classList.remove('selected');
+        for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].addEventListener('click', (_)=>{
+            this.inputIndex = i;
+            this.changeSelectedInput();
+            this.enterMode = false;
         });
-        this.container.children[inputs[inputIndex]].classList.add('selected');
-        selectedInput = this.container.children[inputs[inputIndex]];
-        let object = selectedInput.appendChild((0, _.createDiv)('temporary'));
-        let width = selectedInput.offsetHeight - (selectedInput.clientHeight - object.clientHeight) - parseFloat(selectedInput.style.padding);
-        this.maxCharacters = Math.floor(window.innerWidth / width);
-        object.remove();
+        this.container.children[this.inputIndex].classList.add('selected');
+        this.selectedInput = this.container.children[this.inputIndex];
+        this.changeSelectedInput();
         this.homeButton.addEventListener('click', (_1)=>{
             (0, _.removeAllEventListeners)();
             (0, _.home).modifyDocument();
         });
         this.buttonLeft.addEventListener('mousedown', (_)=>{
-            for(let i = 0; i < this.container.childElementCount; i += 2){
+            for(let i = 0; i < this.container.childElementCount; i++){
                 this.container.children[i].classList.add('shadow');
                 this.buttonLeft.classList.add('clicked');
             }
         });
         this.buttonRight.addEventListener('mousedown', (_)=>{
-            for(let i = 0; i < this.container.childElementCount; i += 2){
+            for(let i = 0; i < this.container.childElementCount; i++){
                 this.container.children[i].classList.add('shadow');
                 this.buttonRight.classList.add('clicked');
             }
         });
         this.buttonLeft.addEventListener('mouseout', (_)=>{
-            for(let i = 0; i < this.container.childElementCount; i += 2){
+            for(let i = 0; i < this.container.childElementCount; i++){
                 this.container.children[i].classList.remove('shadow');
                 this.buttonLeft.classList.remove('clicked');
             }
         });
         this.buttonRight.addEventListener('mouseout', (_)=>{
-            for(let i = 0; i < this.container.childElementCount; i += 2){
+            for(let i = 0; i < this.container.childElementCount; i++){
                 this.container.children[i].classList.remove('shadow');
                 this.buttonRight.classList.remove('clicked');
             }
         });
         this.buttonLeftFunction = (_)=>{
             if (this.vocabulary[this.wordIndex - 1]) {
-                if (Object.values(currentWord).filter((value)=>value === '').length === 4 && this.wordIndex === this.vocabulary.length) {
-                    for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                if (Object.values(this.currentWord).filter((value)=>value === '').length === 4 && this.wordIndex === this.vocabulary.length) {
+                    for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                     this.wordIndex--;
-                    currentWord = this.vocabulary[this.wordIndex];
-                    for(let i = 0; i < this.container.childElementCount; i += 2){
-                        let value = Object.values(currentWord)[i / 2];
+                    this.currentWord = this.vocabulary[this.wordIndex];
+                    for(let i = 0; i < this.container.childElementCount; i++){
+                        let value = Object.values(this.currentWord)[i];
                         this.container.children[i].innerHTML = '';
                         for(let ii = 0; ii < value.length; ii++){
                             let object = document.createElement('object');
                             object.data = './keys/OG_T.svg';
-                            object.id = `key${ii}-inp${i / 2}`;
+                            object.id = `key${ii}-inp${i}`;
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
                             object.addEventListener('load', (_)=>{
@@ -875,25 +868,25 @@ class AddVocabulary {
                         }
                     }
                 } else {
-                    this.vocabulary[this.wordIndex] = currentWord;
+                    this.vocabulary[this.wordIndex] = this.currentWord;
                     const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                     transaction.onerror = (_)=>console.error(transaction.error);
                     const objectStore = transaction.objectStore(`vocabulary`);
                     const req = objectStore.get(this.wordIndex);
                     req.onerror = (_)=>console.error(req.error);
                     req.onsuccess = (_)=>{
-                        for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
-                        const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
+                        for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
+                        const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
                         idontcare.onerror = (_)=>console.error(idontcare.error);
                         this.wordIndex--;
-                        currentWord = this.vocabulary[this.wordIndex];
-                        for(let i = 0; i < this.container.childElementCount; i += 2){
-                            let value = Object.values(currentWord)[i / 2];
+                        this.currentWord = this.vocabulary[this.wordIndex];
+                        for(let i = 0; i < this.container.childElementCount; i++){
+                            let value = Object.values(this.currentWord)[i];
                             this.container.children[i].innerHTML = '';
                             for(let ii = 0; ii < value.length; ii++){
                                 let object = document.createElement('object');
                                 object.data = './keys/OG_T.svg';
-                                object.id = `key${ii}-inp${i / 2}`;
+                                object.id = `key${ii}-inp${i}`;
                                 object.style.height = `100%`;
                                 this.container.children[i].insertAdjacentElement('beforeend', object);
                                 object.addEventListener('load', (_)=>{
@@ -910,17 +903,17 @@ class AddVocabulary {
         this.buttonRightFunction = (_)=>{
             this.buttonRight.classList.remove('clicked');
             if (!this.vocabulary[this.wordIndex + 1]) {
-                this.vocabulary[this.wordIndex] = currentWord;
+                this.vocabulary[this.wordIndex] = this.currentWord;
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                 transaction.onerror = (_)=>console.error(transaction.error);
                 const objectStore = transaction.objectStore(`vocabulary`);
-                const req = objectStore.put(currentWord, this.wordIndex + 1);
+                const req = objectStore.put(this.currentWord, this.wordIndex + 1);
                 req.onerror = (_)=>console.error(req.error);
                 transaction.oncomplete = (_)=>{
-                    for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                    for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                     this.wordIndex++;
-                    keys = 0;
-                    currentWord = {
+                    this.keys = 0;
+                    this.currentWord = {
                         latinWord: '',
                         inflections: '',
                         germanTranslation: '',
@@ -928,34 +921,38 @@ class AddVocabulary {
                         selected: true,
                         probability: 1
                     };
-                    for(let i = 0; i < this.container.childElementCount; i += 2){
+                    for(let i = 0; i < this.container.childElementCount; i++){
                         this.container.children[i].innerHTML = '';
-                        inputIndex = 0;
-                        selectedInput = this.container.children[0];
-                        selectedInput.classList.add('selected');
-                        if (i != 0) this.container.children[i].classList.remove('selected');
+                        this.inputIndex = 0;
+                        this.selectedInput = this.container.children[0];
+                        this.selectedInput.classList.add('selected');
+                        if (i != 0) {
+                            let div = this.container.children[i];
+                            div.classList.remove('selected');
+                            div.style.padding = `${this.padding[i]}px 0.5vw`;
+                        }
                     }
                 };
             } else {
-                this.vocabulary[this.wordIndex] = currentWord;
-                for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                this.vocabulary[this.wordIndex] = this.currentWord;
+                for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                 transaction.onerror = (_)=>console.error(transaction.error);
                 const objectStore = transaction.objectStore(`vocabulary`);
                 const req = objectStore.get(this.wordIndex);
                 req.onerror = (_)=>console.error(req.error);
                 req.onsuccess = (_)=>{
-                    const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
-                    idontcare.onerror = (_)=>console.log(idontcare.error);
+                    const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
+                    idontcare.onerror = (_)=>console.error(idontcare.error);
                     this.wordIndex++;
-                    currentWord = this.vocabulary[this.wordIndex];
-                    for(let i = 0; i < this.container.childElementCount; i += 2){
-                        let value = Object.values(currentWord)[i / 2];
+                    this.currentWord = this.vocabulary[this.wordIndex];
+                    for(let i = 0; i < this.container.childElementCount; i++){
+                        let value = Object.values(this.currentWord)[i];
                         this.container.children[i].innerHTML = '';
                         for(let ii = 0; ii < value.length; ii++){
                             let object = document.createElement('object');
                             object.data = './keys/OG_T.svg';
-                            object.id = `key${ii}-inp${i / 2}`;
+                            object.id = `key${ii}-inp${i}`;
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
                             object.addEventListener('load', (_)=>{
@@ -976,6 +973,35 @@ class AddVocabulary {
             ];
             if (this.commandMode) {
                 if (event.key === 'Enter') {
+                    if (this.command.endsWith('%')) {
+                        if (this.command.startsWith('#p-')) {
+                            let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                            if (percentage >= 0 && percentage <= 100) {
+                                this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.85), 1));
+                                this.paddingAnimation(this.selectedInput);
+                                this.command.split('').forEach((_)=>{
+                                    this.selectedInput.lastElementChild.remove();
+                                    this.keys--;
+                                });
+                                this.command = '';
+                                this.commandMode = false;
+                                return;
+                            }
+                        } else if (this.command.startsWith('#p+')) {
+                            let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                            if (percentage >= 0) {
+                                this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.85), 1));
+                                this.paddingAnimation(this.selectedInput);
+                                this.command.split('').forEach((_)=>{
+                                    this.selectedInput.lastElementChild.remove();
+                                    this.keys--;
+                                });
+                                this.command = '';
+                                this.commandMode = false;
+                                return;
+                            }
+                        }
+                    }
                     switch(this.command){
                         case '#<':
                         case '#<-':
@@ -988,7 +1014,6 @@ class AddVocabulary {
                         case '#Previous':
                         case '#Prev':
                         case '#prev':
-                        case '#p':
                             this.command = '';
                             this.commandMode = false;
                             this.buttonLeftFunction(event);
@@ -1001,7 +1026,6 @@ class AddVocabulary {
                         case "#N\xe4chstes":
                         case '#Next':
                         case '#Nxt':
-                        case '#n':
                             this.command = '';
                             this.commandMode = false;
                             this.buttonRightFunction(event);
@@ -1024,8 +1048,8 @@ class AddVocabulary {
                             return;
                         default:
                             this.command.split('').forEach((_)=>{
-                                selectedInput.lastElementChild.remove();
-                                keys--;
+                                this.selectedInput.lastElementChild.remove();
+                                this.keys--;
                             });
                     }
                     this.command = '';
@@ -1033,80 +1057,77 @@ class AddVocabulary {
                     return;
                 } else if (event.key === 'ArrowUp') {
                     this.command.split('').forEach((_)=>{
-                        selectedInput.lastElementChild.remove();
-                        keys--;
+                        this.selectedInput.lastElementChild.remove();
+                        this.keys--;
                     });
                     this.command = '';
                     this.commandMode = false;
-                    if (inputIndex > 0) {
-                        inputIndex--;
-                        selectedInput.classList.remove('selected');
-                        selectedInput = this.container.children[inputs[inputIndex]];
-                        keys = selectedInput.childElementCount;
+                    if (this.inputIndex > 0) {
+                        this.inputIndex--;
+                        this.selectedInput.classList.remove('selected');
+                        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.5vw`;
+                        this.selectedInput = this.container.children[this.inputIndex];
+                        this.keys = this.selectedInput.childElementCount;
                     }
-                    selectedInput.classList.add('selected');
+                    this.selectedInput.classList.add('selected');
                     return;
                 } else if (event.key === 'ArrowDown') {
                     this.command.split('').forEach((_)=>{
-                        selectedInput.lastElementChild.remove();
-                        keys--;
+                        this.selectedInput.lastElementChild.remove();
+                        this.keys--;
                     });
                     this.command = '';
                     this.commandMode = false;
-                    if (inputIndex + 1 < 4) {
-                        inputIndex++;
-                        selectedInput.classList.remove('selected');
-                        selectedInput = this.container.children[inputs[inputIndex]];
-                        keys = selectedInput.childElementCount;
+                    if (this.inputIndex + 1 < 4) {
+                        this.inputIndex++;
+                        this.selectedInput.classList.remove('selected');
+                        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.5vw`;
+                        this.selectedInput = this.container.children[this.inputIndex];
+                        this.keys = this.selectedInput.childElementCount;
                     }
-                    selectedInput.classList.add('selected');
+                    this.selectedInput.classList.add('selected');
                     return;
                 } else if (event.key === 'Backspace') {
-                    if (selectedInput.lastElementChild) {
-                        selectedInput.lastElementChild.remove();
+                    if (this.selectedInput.lastElementChild) {
+                        this.selectedInput.lastElementChild.remove();
                         this.command = this.command.slice(0, this.command.length - 1);
-                        keys--;
+                        this.keys--;
                         if (this.command === '') this.commandMode = false;
                     }
+                    return;
                 }
                 if (this.commandMode && (forbiddenCharacters.includes(event.key) || event.key.length > 1)) return;
             }
-            //TODO: enable commands in add vocabulary
             if (!this.commandMode) {
                 if (event.key === 'Backspace') {
-                    if (selectedInput.lastElementChild) {
-                        selectedInput.lastElementChild.remove();
-                        Object.defineProperty(currentWord, Object.keys(currentWord)[inputIndex], {
-                            value: Object.values(currentWord)[inputIndex].slice(0, keys - 1)
+                    if (this.selectedInput.lastElementChild) {
+                        this.selectedInput.lastElementChild.remove();
+                        Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex], {
+                            value: Object.values(this.currentWord)[this.inputIndex].slice(0, this.keys - 1)
                         });
-                        keys--;
+                        this.keys--;
                     }
                     return;
                 } else if (event.key === 'Enter' || event.key === 'ArrowDown') {
-                    if (inputIndex + 1 < 4) {
-                        inputIndex++;
-                        selectedInput = this.container.children[inputs[inputIndex]];
-                        for(let i = 0; i < this.container.childElementCount; i++)if (this.container.children[i] != selectedInput) this.container.children[i].classList.remove('selected');
-                        else {
-                            selectedInput.classList.add('selected');
-                            keys = selectedInput.childElementCount;
-                        }
+                    if (this.inputIndex + 1 < 4) {
+                        this.inputIndex++;
+                        this.changeSelectedInput();
                     } else {
-                        for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.add('shadow');
+                        for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.add('shadow');
                         if (this.enterMode) {
                             this.buttonRight.classList.remove('clicked');
                             if (!this.vocabulary[this.wordIndex + 1]) {
-                                this.vocabulary[this.wordIndex] = currentWord;
+                                this.vocabulary[this.wordIndex] = this.currentWord;
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                                 transaction.onerror = (_)=>console.error(transaction.error);
                                 const objectStore = transaction.objectStore(`vocabulary`);
-                                const req = objectStore.put(currentWord, this.wordIndex + 1);
+                                const req = objectStore.put(this.currentWord, this.wordIndex + 1);
                                 req.onerror = (_)=>console.error(req.error);
                                 transaction.oncomplete = (_)=>{
-                                    for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                                    for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                                     this.wordIndex++;
-                                    keys = 0;
-                                    currentWord = {
+                                    this.keys = 0;
+                                    this.currentWord = {
                                         latinWord: '',
                                         inflections: '',
                                         germanTranslation: '',
@@ -1114,34 +1135,38 @@ class AddVocabulary {
                                         selected: true,
                                         probability: 1
                                     };
-                                    for(let i = 0; i < this.container.childElementCount; i += 2){
+                                    for(let i = 0; i < this.container.childElementCount; i++){
                                         this.container.children[i].innerHTML = '';
-                                        inputIndex = 0;
-                                        selectedInput = this.container.children[0];
-                                        selectedInput.classList.add('selected');
-                                        if (i != 0) this.container.children[i].classList.remove('selected');
+                                        this.inputIndex = 0;
+                                        this.selectedInput = this.container.children[0];
+                                        this.selectedInput.classList.add('selected');
+                                        if (i != 0) {
+                                            let div = this.container.children[i];
+                                            div.classList.remove('selected');
+                                            div.style.padding = `${this.padding[i]}px 0.5vw`;
+                                        }
                                     }
                                 };
                             } else {
-                                this.vocabulary[this.wordIndex] = currentWord;
-                                for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                                this.vocabulary[this.wordIndex] = this.currentWord;
+                                for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                                 transaction.onerror = (_)=>console.error(transaction.error);
                                 const objectStore = transaction.objectStore(`vocabulary`);
                                 const req = objectStore.get(this.wordIndex);
                                 req.onerror = (_)=>console.error(req.error);
                                 req.onsuccess = (_)=>{
-                                    const idontcare = objectStore.put(currentWord, this.wordIndex + 1);
-                                    idontcare.onerror = (_)=>console.log(idontcare.error);
+                                    const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
+                                    idontcare.onerror = (_)=>console.error(idontcare.error);
                                     this.wordIndex++;
-                                    currentWord = this.vocabulary[this.wordIndex];
-                                    for(let i = 0; i < this.container.childElementCount; i += 2){
-                                        let value = Object.values(currentWord)[i / 2];
+                                    this.currentWord = this.vocabulary[this.wordIndex];
+                                    for(let i = 0; i < this.container.childElementCount; i++){
+                                        let value = Object.values(this.currentWord)[i];
                                         this.container.children[i].innerHTML = '';
                                         for(let ii = 0; ii < value.length; ii++){
                                             let object = document.createElement('object');
                                             object.data = './keys/OG_T.svg';
-                                            object.id = `key${ii}-inp${i / 2}`;
+                                            object.id = `key${ii}-inp${i}`;
                                             object.style.height = `100%`;
                                             this.container.children[i].insertAdjacentElement('beforeend', object);
                                             object.addEventListener('load', (_)=>{
@@ -1157,21 +1182,17 @@ class AddVocabulary {
                         const transaction = this.database.transaction(`vocabulary`, 'readwrite');
                         transaction.onerror = (_)=>console.error(transaction.error);
                         const objectStore = transaction.objectStore(`vocabulary`);
-                        const req = objectStore.put(currentWord, this.wordIndex + 1);
+                        const req = objectStore.put(this.currentWord, this.wordIndex + 1);
                         req.onerror = (_)=>console.error(req.error);
                         setTimeout((_)=>{
-                            for(let i = 0; i < this.container.childElementCount; i += 2)this.container.children[i].classList.remove('shadow');
+                            for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                         }, 250);
                     }
                     return;
                 } else if (event.key === 'ArrowUp') {
-                    if (inputIndex > 0) inputIndex--;
-                    selectedInput = this.container.children[inputs[inputIndex]];
-                    for(let i = 0; i < this.container.childElementCount; i++)if (this.container.children[i] != selectedInput) this.container.children[i].classList.remove('selected');
-                    else {
-                        selectedInput.classList.add('selected');
-                        keys = selectedInput.childElementCount;
-                    }
+                    if (this.inputIndex > 0) this.inputIndex--;
+                    this.changeSelectedInput();
+                    this.enterMode = false;
                     return;
                 } else if (event.key === '#') {
                     this.command = '';
@@ -1180,34 +1201,49 @@ class AddVocabulary {
             }
             let object = document.createElement('object');
             object.data = './keys/OG_T.svg';
-            object.id = `key${keys}-inp${inputIndex}`;
+            object.id = `key${this.keys}-inp${this.inputIndex}`;
             object.style.height = `100%`;
-            selectedInput.insertAdjacentElement('beforeend', object);
+            this.selectedInput.insertAdjacentElement('beforeend', object);
             let width = object.clientHeight;
             object.hidden = true;
             object.addEventListener('load', (_1)=>{
-                if (keys >= Math.floor(window.innerWidth / width)) {
+                if (this.keys >= Math.floor(window.innerWidth / width)) {
                     object.remove();
-                    for(let i = 0; i < keys; i++)this.failureAnimation(selectedInput.children[i]);
+                    for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
                     return;
                 }
                 object.hidden = false;
                 let svg = object.contentDocument;
                 if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
+                else if (event.key === '&') svg.querySelector('#tspan7').innerHTML = '&amp;';
                 else svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
                 if (!this.commandMode) {
-                    Object.defineProperty(currentWord, Object.keys(currentWord)[inputIndex], {
-                        value: Object.values(currentWord)[inputIndex] + event.key.charAt(0)
+                    Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex], {
+                        value: Object.values(this.currentWord)[this.inputIndex] + event.key.charAt(0)
                     });
                     this.idleAnimation(object);
                 } else {
                     this.command += event.key;
                     (0, _.training).commandAnimation(object);
                 }
-                keys++;
+                this.keys++;
             });
         };
         document.addEventListener('keydown', this.keyDownFunction);
+    }
+    changeSelectedInput() {
+        if (this.timeout) clearTimeout(this.timeout);
+        document.querySelectorAll('.selected').forEach((elem)=>{
+            elem.classList.remove('selected');
+            elem.style.padding = `${this.padding[parseInt(elem.id.charAt(3))]}px 0.5vw`;
+            elem.style.border = 'none';
+            elem.style.transition = 'none';
+        });
+        this.selectedInput = this.container.children[this.inputIndex];
+        this.selectedInput.classList.add('selected');
+        this.keys = this.selectedInput.childElementCount;
+        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
+        this.paddingAnimation(this.selectedInput);
     }
     failureAnimation(object) {
         if (!object) return;
@@ -1267,6 +1303,31 @@ class AddVocabulary {
         };
         rect.animate(animationKeyframes, animationOptions);
         text.animate(animationKeyframes, animationOptions);
+    }
+    paddingAnimation(input) {
+        let id = parseInt(input.id.charAt(3));
+        let marginLeft = parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2));
+        let borderLeft = 0.005 * input.offsetWidth - marginLeft;
+        input.style.padding = '0';
+        input.style.willChange = 'border-width';
+        input.style.borderTopWidth = `calc(${this.padding[id]}px)`;
+        input.style.borderRightWidth = `${borderLeft}px`;
+        input.style.borderBottomWidth = `calc(${this.padding[id]}px)`;
+        input.style.borderLeftWidth = `${borderLeft}px`;
+        input.style.borderStyle = 'solid';
+        input.style.borderColor = '#12dada';
+        input.style.transition = 'none';
+        input.style.paddingLeft = 0.005 * window.innerWidth - (parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2)) + parseFloat(window.getComputedStyle(input).borderLeftWidth.slice(0, -2))) + 'px';
+        setTimeout((_)=>{
+            input.style.borderColor = '#06011b';
+            input.style.transition = 'none';
+            input.style.transition = "border-color 1.5s";
+            this.timeout = setTimeout((_)=>{
+                if (input.classList.contains('selected')) input.style.padding = `${this.padding[id]}px 0.25vw`;
+                else input.style.padding = `${this.padding[id]}px 0.5vw`;
+                input.style.border = 'none';
+            }, 1500);
+        }, 1);
     }
 }
 
@@ -1588,10 +1649,10 @@ class ShowVocabulary {
                     let div4 = (0, _.createDiv)(`relatedForeignWords${i}`, 'word');
                     Cdiv.classList.add('cdiv');
                     Cdiv.innerHTML = `<input type="checkbox" id="C${i}" class="checkbox" ${word.selected ? "checked" : ''}></input>`;
-                    div1.innerHTML = `<input type="text" id="0-${i}" class="edit" value="${word.latinWord === '' ? ' ' : word.latinWord}" maxlength="${word.latinWord.length > (0, _.addVocabulary).maxCharacters ? word.latinWord.length : (0, _.addVocabulary).maxCharacters}"></input>`;
-                    div2.innerHTML = `<input type="text" id="1-${i}" class="edit" value="${word.inflections === '' ? ' ' : word.inflections}" maxlength="${word.inflections.length > (0, _.addVocabulary).maxCharacters ? word.inflections.length : (0, _.addVocabulary).maxCharacters}"></input>`;
-                    div3.innerHTML = `<input type="text" id="2-${i}" class="edit" value="${word.germanTranslation === '' ? ' ' : word.germanTranslation}" maxlength="${word.germanTranslation.length > (0, _.addVocabulary).maxCharacters ? word.germanTranslation.length : (0, _.addVocabulary).maxCharacters}"></input>`;
-                    div4.innerHTML = `<input type="text" id="3-${i}" class="edit" value="${word.relatedForeignWords === '' ? ' ' : word.relatedForeignWords}" maxlength="${word.relatedForeignWords.length > (0, _.addVocabulary).maxCharacters ? word.relatedForeignWords.length : (0, _.addVocabulary).maxCharacters}"></input>`;
+                    div1.innerHTML = `<input type="text" id="0-${i}" class="edit" value="${word.latinWord === '' ? ' ' : word.latinWord}"></input>`;
+                    div2.innerHTML = `<input type="text" id="1-${i}" class="edit" value="${word.inflections === '' ? ' ' : word.inflections}"></input>`;
+                    div3.innerHTML = `<input type="text" id="2-${i}" class="edit" value="${word.germanTranslation === '' ? ' ' : word.germanTranslation}"></input>`;
+                    div4.innerHTML = `<input type="text" id="3-${i}" class="edit" value="${word.relatedForeignWords === '' ? ' ' : word.relatedForeignWords}"></input>`;
                     this.container.append(Cdiv, div1, div2, div3, div4);
                 });
                 this.container.style.gridTemplateRows = str;
@@ -2411,6 +2472,7 @@ class InflectVocabulary {
         this.tabulator = "";
         this.tabCount = 0;
         this.v = 1;
+        this.padding = [];
         this.round = 0;
         this.failures = 0;
         this.totalAttempts = 0;
@@ -2447,7 +2509,7 @@ class InflectVocabulary {
             case 'nouns':
             default:
                 const request = window.indexedDB.open('Vocabulary', 1);
-                request.onerror = (_)=>console.log(request.error);
+                request.onerror = (_)=>console.error(request.error);
                 request.onsuccess = (_1)=>{
                     this.database = request.result;
                     this.tabulator = '';
@@ -2484,9 +2546,10 @@ class InflectVocabulary {
                                 if (i > 0) div.innerHTML = `${i / 3}. ${param.includes('verb') ? 'P' : 'F'}.`;
                             }
                             if (!(i < 3 || i % 3 === 0)) {
-                                div.style.padding = `${0.05 * div.offsetHeight}px`;
+                                div.style.padding = `${Math.round(0.05 * div.offsetHeight)}px`;
                                 if (!param.includes('add')) div.classList.add('shadowDesign');
-                            }
+                                this.padding.push(Math.round(div.offsetHeight * 0.05));
+                            } else this.padding.push(0);
                             if (param.includes('verb')) div.classList.add('v');
                         }
                         if (param.startsWith('add')) {
@@ -2545,11 +2608,8 @@ class InflectVocabulary {
                 this.keys = 0;
                 document.querySelectorAll('.editable').forEach((element)=>{
                     element.addEventListener('click', (_)=>{
-                        this.selectedInput = element;
-                        this.keys = this.selectedInput.childElementCount;
-                        document.querySelectorAll('.selectedElement').forEach((elem)=>elem.classList.remove('selectedElement'));
-                        element.classList.add('selectedElement');
                         this.inputIndex = parseInt(element.id.slice(3));
+                        this.changeSelectedInput();
                     });
                 });
                 this.selectedInput = document.getElementById('div4');
@@ -2570,7 +2630,70 @@ class InflectVocabulary {
                     ];
                     if (this.commandMode) {
                         forbiddenCharacters.push('#');
-                        if (event.key === 'Enter') {
+                        if (this.command.endsWith('%')) {
+                            if (this.command.startsWith('#p-')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0 && percentage <= 100) {
+                                    this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                    this.paddingAnimation(this.selectedInput);
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            } else if (this.command.startsWith('#p+')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0) {
+                                    this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                    this.paddingAnimation(this.selectedInput);
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            } else if (this.command.startsWith('#P+')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0) {
+                                    this.padding.forEach((p, i)=>{
+                                        let div = document.querySelector(`#div${i}`);
+                                        if (i > 3 && i % 3 != 0) {
+                                            this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 + percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                            this.paddingAnimation(div);
+                                        }
+                                    });
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            } else if (this.command.startsWith('#P-')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0) {
+                                    this.padding.forEach((p, i)=>{
+                                        let div = document.querySelector(`#div${i}`);
+                                        if (i % 3 != 0) {
+                                            this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 - percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                            this.paddingAnimation(document.querySelector(`#div${i}`));
+                                        }
+                                    });
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            }
                             this.command;
                             this.command.split('').forEach((_)=>{
                                 this.selectedInput.lastElementChild.remove();
@@ -2863,6 +2986,7 @@ class InflectVocabulary {
                         object.hidden = false;
                         let svg = object.contentDocument;
                         if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
+                        else if (event.key === '&') svg.querySelector('#tspan7').innerHTML = '&amp;';
                         else svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
                         if (!this.commandMode) {
                             let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
@@ -2892,7 +3016,6 @@ class InflectVocabulary {
                         if (this.tabMode) this.cancelTabMode();
                         this.inputIndex = parseInt(element.id.slice(3));
                         this.changeSelectedInput();
-                        this.keys = this.selectedInput.childElementCount;
                     });
                 });
                 this.selectedInput = document.getElementById('div4');
@@ -3286,16 +3409,13 @@ class InflectVocabulary {
                             };
                         }
                     }
-                    console.log('left end', this.vocabulary.map((w)=>w.singular[0]));
                 };
                 this.buttonLeft.addEventListener('mouseup', this.buttonLeftFunction);
                 this.buttonRightFunction = (_)=>{
-                    console.log('right', this.vocabulary.map((w)=>w.singular[0]));
                     if (this.tabMode) this.cancelTabMode();
                     let vocab = this.vocabulary.slice(this.wordIndex + 1);
                     let wi = vocab.findIndex((w)=>w.verb === param.includes('verb')) >= 0 ? vocab.findIndex((w)=>w.verb === param.includes('verb')) + this.wordIndex + 1 : -1;
                     if (!this.vocabulary[wi]) {
-                        console.log('!this.vocabulary[wi]');
                         this.vocabulary[this.wordIndex] = this.currentWord;
                         const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
                         transaction.onerror = (_)=>console.error(transaction.error);
@@ -3325,7 +3445,6 @@ class InflectVocabulary {
                             this.selectedInput.classList.add('selectedElement');
                         };
                     } else {
-                        console.log('this.vocabulary[wi]');
                         this.vocabulary[this.wordIndex] = this.currentWord;
                         for(let i = 0; i < this.container.childElementCount; i++){
                             this.container.children[i].classList.remove('savedElement');
@@ -3403,7 +3522,6 @@ class InflectVocabulary {
                             }
                         };
                     }
-                    console.log('right end', this.vocabulary.map((w)=>w.singular[0]));
                 };
                 this.buttonRight.addEventListener('mouseup', this.buttonRightFunction);
                 this.keydownFunction = (event)=>{
@@ -3415,7 +3533,71 @@ class InflectVocabulary {
                     if (this.commandMode) {
                         forbiddenCharacters.push('#');
                         if (event.key === 'Enter') {
-                            console.log('Enter');
+                            if (this.command.endsWith('%')) {
+                                if (this.command.startsWith('#p-')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0 && percentage <= 100) {
+                                        this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                        this.paddingAnimation(this.selectedInput);
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#p+')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                        this.paddingAnimation(this.selectedInput);
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#P+')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding.forEach((p, i)=>{
+                                            let div = document.querySelector(`#div${i}`);
+                                            if (i > 3 && i % 3 != 0) {
+                                                this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 + percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                                this.paddingAnimation(div);
+                                            }
+                                        });
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#P-')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding.forEach((p, i)=>{
+                                            let div = document.querySelector(`#div${i}`);
+                                            if (i % 3 != 0) {
+                                                this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 - percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                                this.paddingAnimation(document.querySelector(`#div${i}`));
+                                            }
+                                        });
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                }
+                            }
                             switch(this.command){
                                 case '#<':
                                 case '#<-':
@@ -3463,7 +3645,6 @@ class InflectVocabulary {
                                     (0, _.home).modifyDocument();
                                     return;
                                 default:
-                                    console.log(this.command);
                                     this.command.split('').forEach((_)=>{
                                         this.selectedInput.lastElementChild.remove();
                                         this.keys--;
@@ -3605,7 +3786,7 @@ class InflectVocabulary {
                                         req.onerror = (_)=>console.error(req.error);
                                         req.onsuccess = (_)=>{
                                             const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                            idontcare.onerror = (_)=>console.log(idontcare.error);
+                                            idontcare.onerror = (_)=>console.error(idontcare.error);
                                             this.wordIndex = wi;
                                             this.currentWord = this.vocabulary[wi];
                                             let overallIndexes = [];
@@ -3824,6 +4005,7 @@ class InflectVocabulary {
                         object.hidden = false;
                         let svg = object.contentDocument;
                         if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
+                        else if (event.key === '&') svg.querySelector('#tspan7').innerHTML = '&amp;';
                         else svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
                         let n = Math.floor(this.inputIndex / 3) - 1;
                         let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
@@ -3862,6 +4044,12 @@ class InflectVocabulary {
         return array;
     }
     changeSelectedInput() {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.selectedInput.style.padding = `${this.padding[parseInt(this.selectedInput.id.slice(3, 5))]}px ${0.05 * this.selectedInput.offsetHeight}px`;
+            this.selectedInput.style.transition = 'none';
+            this.selectedInput.style.border = 'none';
+        }
         document.querySelectorAll('.selectedElement').forEach((elem)=>elem.classList.remove('selectedElement'));
         this.selectedInput = document.getElementById(`div${this.inputIndex}`);
         let word = Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1];
@@ -3870,6 +4058,8 @@ class InflectVocabulary {
         this.tabCount = matches ? matches.length : 0;
         if (!matches ? false : matches.length % 2 === 0) this.selectedInput.classList.remove('tab');
         this.selectedInput.classList.add('selectedElement');
+        this.keys = this.selectedInput.childElementCount;
+        this.paddingAnimation(this.selectedInput);
     }
     cancelTabMode() {
         let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
@@ -4229,6 +4419,30 @@ class InflectVocabulary {
             };
             element.animate(animationKeyframes, animationOptions);
         }
+    }
+    paddingAnimation(input) {
+        if (input.classList.contains('known-case')) return;
+        let id = parseInt(input.id.slice(3, 5));
+        let borderLeft = 0.05 * input.offsetHeight;
+        input.style.padding = '0';
+        input.style.willChange = 'border-width';
+        input.style.borderTopWidth = `${this.padding[id]}px`;
+        input.style.borderRightWidth = `${borderLeft}px`;
+        input.style.borderBottomWidth = `${this.padding[id]}px`;
+        input.style.borderLeftWidth = `${borderLeft}px`;
+        input.style.borderStyle = 'solid';
+        input.style.borderColor = '#12dada';
+        input.style.transition = 'none';
+        input.style.paddingLeft = borderLeft - parseInt(window.getComputedStyle(input).borderLeft.slice(0, -2)) + 'px';
+        setTimeout((_)=>{
+            input.style.borderColor = '#06011b';
+            input.style.transition = "border-color 1.5s";
+            this.timeout = setTimeout((_)=>{
+                input.style.padding = `${this.padding[id]}px ${0.05 * input.offsetHeight}px`;
+                input.style.border = 'none';
+                input.style.transition = 'none';
+            }, 1500);
+        }, 1);
     }
 }
 

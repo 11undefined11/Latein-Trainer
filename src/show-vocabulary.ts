@@ -83,10 +83,10 @@ export class ShowVocabulary {
                     Cdiv.classList.add('cdiv');
 
                     Cdiv.innerHTML = `<input type="checkbox" id="C${i}" class="checkbox" ${(word.selected) ? "checked" : ''}></input>`;
-                    div1.innerHTML = `<input type="text" id="0-${i}" class="edit" value="${(word.latinWord === '') ? ' ' : word.latinWord}" maxlength="${(word.latinWord.length > addVocabulary.maxCharacters) ? word.latinWord.length : addVocabulary.maxCharacters}"></input>`;
-                    div2.innerHTML = `<input type="text" id="1-${i}" class="edit" value="${(word.inflections === '') ? ' ' : word.inflections}" maxlength="${(word.inflections.length > addVocabulary.maxCharacters) ? word.inflections.length : addVocabulary.maxCharacters}"></input>`;
-                    div3.innerHTML = `<input type="text" id="2-${i}" class="edit" value="${(word.germanTranslation === '') ? ' ' : word.germanTranslation}" maxlength="${(word.germanTranslation.length > addVocabulary.maxCharacters) ? word.germanTranslation.length : addVocabulary.maxCharacters}"></input>`;
-                    div4.innerHTML = `<input type="text" id="3-${i}" class="edit" value="${(word.relatedForeignWords === '') ? ' ' : word.relatedForeignWords}" maxlength="${(word.relatedForeignWords.length > addVocabulary.maxCharacters) ? word.relatedForeignWords.length : addVocabulary.maxCharacters}"></input>`;
+                    div1.innerHTML = `<input type="text" id="0-${i}" class="edit" value="${(word.latinWord === '') ? ' ' : word.latinWord}"></input>`;
+                    div2.innerHTML = `<input type="text" id="1-${i}" class="edit" value="${(word.inflections === '') ? ' ' : word.inflections}"></input>`;
+                    div3.innerHTML = `<input type="text" id="2-${i}" class="edit" value="${(word.germanTranslation === '') ? ' ' : word.germanTranslation}"></input>`;
+                    div4.innerHTML = `<input type="text" id="3-${i}" class="edit" value="${(word.relatedForeignWords === '') ? ' ' : word.relatedForeignWords}"></input>`;
 
                     this.container.append(Cdiv, div1, div2, div3, div4);
                 });

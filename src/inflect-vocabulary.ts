@@ -31,6 +31,7 @@ export class InflectVocabulary {
     tabCount = 0;
     keys: number;
     v = 1;
+    padding: number[] = [];
 
     round = 0;
     failures = 0;
@@ -42,6 +43,7 @@ export class InflectVocabulary {
     };
 
     badColor = 'rgb(186, 2, 70)';
+    timeout: number;
 
     constructor() {
     }
@@ -87,7 +89,7 @@ export class InflectVocabulary {
             case 'nouns':
             default:
                 const request = window.indexedDB.open('Vocabulary', 1);
-                request.onerror = _ => console.log(request.error);
+                request.onerror = _ => console.error(request.error);
                 request.onsuccess = _ => {
                     this.database = request.result;
                     this.tabulator = '';
@@ -137,15 +139,19 @@ export class InflectVocabulary {
                                 if (i > 0) div.innerHTML = `${i / 3}. ${param.includes('verb') ? 'P' : 'F'}.`;
                             }
                             if (!(i < 3 || i % 3 === 0)) {
-                                div.style.padding = `${0.05 * div.offsetHeight}px`;
+                                div.style.padding = `${Math.round(0.05 * div.offsetHeight)}px`;
                                 if (!param.includes('add')) {
                                     div.classList.add('shadowDesign');
                                 }
+                                this.padding.push(Math.round(div.offsetHeight * 0.05));
+                            } else {
+                                this.padding.push(0);
                             }
 
                             if (param.includes('verb')) {
                                 div.classList.add('v');
                             }
+
                         }
 
                         if (param.startsWith('add')) {
@@ -220,11 +226,8 @@ export class InflectVocabulary {
 
                 document.querySelectorAll('.editable').forEach((element: HTMLDivElement) => {
                     element.addEventListener('click', _ => {
-                        this.selectedInput = element;
-                        this.keys = this.selectedInput.childElementCount;
-                        document.querySelectorAll('.selectedElement').forEach(elem => elem.classList.remove('selectedElement'));
-                        element.classList.add('selectedElement');
                         this.inputIndex = parseInt(element.id.slice(3));
+                        this.changeSelectedInput();
                     });
                 });
 
@@ -244,7 +247,72 @@ export class InflectVocabulary {
                     let forbiddenCharacters = ['´', '`', '^'];
                     if (this.commandMode) {
                         forbiddenCharacters.push('#');
-                        if (event.key === 'Enter') {
+                        if (this.command.endsWith('%')) {
+                            if (this.command.startsWith('#p-')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0 && percentage <= 100) {
+                                    this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                    this.paddingAnimation(this.selectedInput);
+                                    this.command.split('').forEach(_ => {
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            } else if (this.command.startsWith('#p+')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0) {
+                                    this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                    this.paddingAnimation(this.selectedInput);
+                                    this.command.split('').forEach(_ => {
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            } else if (this.command.startsWith('#P+')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0) {
+                                    this.padding.forEach((p, i) => {
+                                        let div: HTMLDivElement = document.querySelector(`#div${i}`);
+                                        if (i > 3 && i % 3 != 0) {
+                                            this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 + percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                            this.paddingAnimation(div);
+                                        }
+                                    });
+                                    this.command.split('').forEach(_ => {
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            } else if (this.command.startsWith('#P-')) {
+                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                if (percentage >= 0) {
+                                    this.padding.forEach((p, i) => {
+                                        let div: HTMLDivElement = document.querySelector(`#div${i}`);
+                                        if (i % 3 != 0) {
+                                            this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 - percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                            this.paddingAnimation(document.querySelector(`#div${i}`));
+                                        }
+                                    });
+                                    this.command.split('').forEach(_ => {
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            }
+
                             switch (this.command) {
                                 default: {
                                     this.command.split('').forEach(_ => {
@@ -647,6 +715,8 @@ export class InflectVocabulary {
                         let svg = object.contentDocument;
                         if (event.key === '<') {
                             svg.querySelector('#tspan7').innerHTML = '&lt;';
+                        } else if (event.key === '&') {
+                            svg.querySelector('#tspan7').innerHTML = '&amp;';
                         } else {
                             svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
                         }
@@ -691,7 +761,6 @@ export class InflectVocabulary {
                         }
                         this.inputIndex = parseInt(element.id.slice(3));
                         this.changeSelectedInput();
-                        this.keys = this.selectedInput.childElementCount;
                     });
                 });
 
@@ -1156,12 +1225,10 @@ export class InflectVocabulary {
                             }
                         }
                     }
-                    console.log('left end', this.vocabulary.map(w => w.singular[0]));
                 };
                 this.buttonLeft.addEventListener('mouseup', this.buttonLeftFunction);
 
                 this.buttonRightFunction = _ => {
-                    console.log('right', this.vocabulary.map(w => w.singular[0]));
                     if (this.tabMode) {
                         this.cancelTabMode();
                     }
@@ -1170,7 +1237,6 @@ export class InflectVocabulary {
                     let wi = (vocab.findIndex(w => w.verb === param.includes('verb'))) >= 0 ? vocab.findIndex(w => w.verb === param.includes('verb')) + this.wordIndex + 1 : -1;
 
                     if (!this.vocabulary[wi]) {
-                        console.log('!this.vocabulary[wi]');
                         this.vocabulary[this.wordIndex] = this.currentWord;
 
                         const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
@@ -1206,7 +1272,6 @@ export class InflectVocabulary {
                             this.selectedInput.classList.add('selectedElement');
                         }
                     } else {
-                        console.log('this.vocabulary[wi]');
                         this.vocabulary[this.wordIndex] = this.currentWord;
 
                         for (let i = 0; i < this.container.childElementCount; i++) {
@@ -1293,7 +1358,6 @@ export class InflectVocabulary {
                             }
                         }
                     }
-                    console.log('right end', this.vocabulary.map(w => w.singular[0]));
                 };
                 this.buttonRight.addEventListener('mouseup', this.buttonRightFunction);
 
@@ -1302,7 +1366,73 @@ export class InflectVocabulary {
                     if (this.commandMode) {
                         forbiddenCharacters.push('#');
                         if (event.key === 'Enter') {
-                            console.log('Enter')
+                            if (this.command.endsWith('%')) {
+                                if (this.command.startsWith('#p-')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0 && percentage <= 100) {
+                                        this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                        this.paddingAnimation(this.selectedInput);
+                                        this.command.split('').forEach(_ => {
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#p+')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                        this.paddingAnimation(this.selectedInput);
+                                        this.command.split('').forEach(_ => {
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#P+')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding.forEach((p, i) => {
+                                            let div: HTMLDivElement = document.querySelector(`#div${i}`);
+                                            if (i > 3 && i % 3 != 0) {
+                                                this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 + percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                                this.paddingAnimation(div);
+                                            }
+                                        });
+                                        this.command.split('').forEach(_ => {
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#P-')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding.forEach((p, i) => {
+                                            let div: HTMLDivElement = document.querySelector(`#div${i}`);
+                                            if (i % 3 != 0) {
+                                                this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 - percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                                this.paddingAnimation(document.querySelector(`#div${i}`));
+                                            }
+                                        });
+                                        this.command.split('').forEach(_ => {
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                }
+                            }
+                            
                             switch (this.command) {
                                 case '#<':
                                 case '#<-':
@@ -1350,7 +1480,6 @@ export class InflectVocabulary {
                                     home.modifyDocument();
                                     return;
                                 default: {
-                                    console.log(this.command)
                                     this.command.split('').forEach(_ => {
                                         this.selectedInput.lastElementChild.remove();
                                         this.keys--;
@@ -1557,7 +1686,7 @@ export class InflectVocabulary {
                                         req.onerror = _ => console.error(req.error);
                                         req.onsuccess = _ => {
                                             const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                            idontcare.onerror = _ => console.log(idontcare.error);
+                                            idontcare.onerror = _ => console.error(idontcare.error);
 
                                             this.wordIndex = wi;
                                             this.currentWord = <InflectedWord>this.vocabulary[wi];
@@ -1836,6 +1965,8 @@ export class InflectVocabulary {
                         let svg = object.contentDocument;
                         if (event.key === '<') {
                             svg.querySelector('#tspan7').innerHTML = '&lt;';
+                        } else if (event.key === '&') {
+                            svg.querySelector('#tspan7').innerHTML = '&amp;';
                         } else {
                             svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
                         }
@@ -1895,6 +2026,12 @@ export class InflectVocabulary {
     }
 
     changeSelectedInput(): void {
+        if (this.timeout) {
+            clearTimeout(this.timeout);
+            this.selectedInput.style.padding = `${this.padding[parseInt(this.selectedInput.id.slice(3, 5))]}px ${0.05 * this.selectedInput.offsetHeight}px`;
+            this.selectedInput.style.transition = 'none';
+            this.selectedInput.style.border = 'none';
+        }
         document.querySelectorAll('.selectedElement').forEach(elem => elem.classList.remove('selectedElement'));
         this.selectedInput = <HTMLDivElement>document.getElementById(`div${this.inputIndex}`);
         let word = <string>Object.values(this.currentWord)[this.inputIndex % 3 - 1][(Math.floor(this.inputIndex / 3) - 1)];
@@ -1905,6 +2042,8 @@ export class InflectVocabulary {
             this.selectedInput.classList.remove('tab');
         }
         this.selectedInput.classList.add('selectedElement');
+        this.keys = this.selectedInput.childElementCount;
+        this.paddingAnimation(this.selectedInput);
     }
 
     cancelTabMode(): void {
@@ -2250,6 +2389,36 @@ export class InflectVocabulary {
         }
     }
 
+    paddingAnimation(input: HTMLDivElement): void {
+        if (input.classList.contains('known-case')) {
+            return;
+        }
+
+        let id = parseInt(input.id.slice(3, 5));
+        let borderLeft = 0.05 * input.offsetHeight;
+
+        input.style.padding = '0';
+        input.style.willChange = 'border-width';
+        input.style.borderTopWidth = `${this.padding[id]}px`;
+        input.style.borderRightWidth = `${borderLeft}px`;
+        input.style.borderBottomWidth = `${this.padding[id]}px`;
+        input.style.borderLeftWidth = `${borderLeft}px`;
+        input.style.borderStyle = 'solid';
+        input.style.borderColor = '#12dada';
+        input.style.transition = 'none';
+        input.style.paddingLeft = borderLeft - parseInt(window.getComputedStyle(input).borderLeft.slice(0, -2)) + 'px';
+
+        setTimeout(_ => {
+            input.style.borderColor = '#06011b';
+            input.style.transition = "border-color 1.5s";
+
+            this.timeout = setTimeout(_ => {
+                input.style.padding = `${this.padding[id]}px ${0.05 * input.offsetHeight}px`;
+                input.style.border = 'none';
+                input.style.transition = 'none';
+            }, 1500);
+        }, 1);
+    }
 }
 
 type Parameter = 'nouns' | 'verbs' | 'add nouns' | 'add verbs';
