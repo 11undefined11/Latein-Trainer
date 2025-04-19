@@ -1,4 +1,4 @@
-import { createDiv, home, removeAllEventListeners, showVocabulary, training } from "..";
+import { createDiv, home, removeAllEventListeners, training } from "..";
 
 export class AddVocabulary {
     container: HTMLDivElement;
@@ -14,6 +14,7 @@ export class AddVocabulary {
 
     enterMode = false;
     commandMode = false;
+    automaticPaddingAdjustment = false;
     command = '';
     padding: [number, number, number, number] = [undefined, undefined, undefined, undefined]
 
@@ -29,11 +30,18 @@ export class AddVocabulary {
         probability: 1
     }
 
+    firstInterval: number;
+    secondInterval: number;
+    intervals: number[] = [];
+    firstTimeout: number;
+    animatedInputIndex: number;
+    animatedBorderWidth = 0;
+
     keyDownFunction: EventListenerOrEventListenerObject;
     maxCharacters: number;
     buttonLeftFunction: (_: any) => void;
     buttonRightFunction: (_: any) => void;
-    timeout: number;
+    secondTimeout: number;
 
     constructor() {
         const request = window.indexedDB.open('Vocabulary', 1);
@@ -191,6 +199,14 @@ export class AddVocabulary {
     type(): void {
         for (let i = 0; i < this.container.childElementCount; i++) {
             this.container.children[i].addEventListener('click', _ => {
+                if (this.commandMode) {
+                    this.command.split('').forEach(_ => {
+                        this.selectedInput.lastElementChild.remove();
+                        this.keys--;
+                    });
+                    this.command = '';
+                    this.commandMode = false;
+                }
                 this.inputIndex = i;
                 this.changeSelectedInput();
                 this.enterMode = false;
@@ -248,7 +264,7 @@ export class AddVocabulary {
                     this.currentWord = this.vocabulary[this.wordIndex];
 
                     for (let i = 0; i < this.container.childElementCount; i++) {
-                        let value = Object.values(this.currentWord)[i];
+                        let value = <string>Object.values(this.currentWord)[i];
                         this.container.children[i].innerHTML = '';
                         for (let ii = 0; ii < value.length; ii++) {
                             let object = document.createElement('object');
@@ -257,12 +273,31 @@ export class AddVocabulary {
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
 
+                            object.hidden = true;
                             object.addEventListener('load', _ => {
                                 let svg = object.contentDocument;
-                                svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                if (value.charAt(ii) === '<') {
+                                    svg.querySelector('#tspan7').innerHTML = '&lt;';
+                                } else if (value.charAt(ii) === '&') {
+                                    svg.querySelector('#tspan7').innerHTML = '&amp;';
+                                } else {
+                                    svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                }
                             })
                         }
+
+                        let objects = this.container.querySelectorAll('object');
+                        if (objects.length > 0) {
+                            objects[objects.length - 1].addEventListener('load', _ => {
+                                objects.forEach(obj => obj.hidden = false);
+                                for (let i = 0; i < this.container.childElementCount; i++) {
+                                    let value = Object.values(this.currentWord)[i];
+                                    value = this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                                }
+                            });
+                        }
                     }
+
                 } else {
                     this.vocabulary[this.wordIndex] = this.currentWord;
 
@@ -292,11 +327,29 @@ export class AddVocabulary {
                                 object.style.height = `100%`;
                                 this.container.children[i].insertAdjacentElement('beforeend', object);
 
+                                object.hidden = true;
                                 object.addEventListener('load', _ => {
                                     let svg = object.contentDocument;
-                                    svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                    if (value.charAt(ii) === '<') {
+                                        svg.querySelector('#tspan7').innerHTML = '&lt;';
+                                    } else if (value.charAt(ii) === '&') {
+                                        svg.querySelector('#tspan7').innerHTML = '&amp;';
+                                    } else {
+                                        svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                    }
                                 })
                             }
+                        }
+
+                        let objects = this.container.querySelectorAll('object');
+                        if (objects.length > 0) {
+                            objects[objects.length - 1].addEventListener('load', _ => {
+                                objects.forEach(obj => obj.hidden = false);
+                                for (let i = 0; i < this.container.childElementCount; i++) {
+                                    let value = Object.values(this.currentWord)[i];
+                                    value = this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                                }
+                            });
                         }
                     }
                 }
@@ -372,16 +425,33 @@ export class AddVocabulary {
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
 
+                            object.hidden = true;
                             object.addEventListener('load', _ => {
                                 let svg = object.contentDocument;
-                                svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                if (value.charAt(ii) === '<') {
+                                    svg.querySelector('#tspan7').innerHTML = '&lt;';
+                                } else if (value.charAt(ii) === '&') {
+                                    svg.querySelector('#tspan7').innerHTML = '&amp;';
+                                } else {
+                                    svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                }
                             })
                         }
+                    }
+
+                    let objects = this.container.querySelectorAll('object');
+                    if (objects.length > 0) {
+                        objects[objects.length - 1].addEventListener('load', _ => {
+                            objects.forEach(obj => obj.hidden = false);
+                            for (let i = 0; i < this.container.childElementCount; i++) {
+                                let value = Object.values(this.currentWord)[i];
+                                value = this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                            }
+                        });
                     }
                 }
             }
         };
-
         this.buttonRight.addEventListener('mouseup', this.buttonRightFunction);
 
         this.keyDownFunction = (event: KeyboardEvent) => {
@@ -419,17 +489,13 @@ export class AddVocabulary {
                         }
                     }
 
-                    switch (this.command) {
+                    switch (this.command.toLowerCase()) {
                         case '#<':
                         case '#<-':
                         case '#previous':
                         case '#prvs':
                         case '#vorheriges':
                         case '#voriges':
-                        case '#Vorheriges':
-                        case '#Voriges':
-                        case '#Previous':
-                        case '#Prev':
                         case '#prev':
                             this.command = '';
                             this.commandMode = false;
@@ -440,9 +506,6 @@ export class AddVocabulary {
                         case '#next':
                         case '#nxt':
                         case '#nächstes':
-                        case '#Nächstes':
-                        case '#Next':
-                        case '#Nxt':
                             this.command = '';
                             this.commandMode = false;
                             this.buttonRightFunction(event);
@@ -453,9 +516,7 @@ export class AddVocabulary {
                         case '#home':
                         case '#stopp':
                         case '#beenden':
-                        case '#Stopp':
                         case '#hauptmenü':
-                        case '#Hauptmenü':
                         case '#home menu':
                         case '#h':
                             this.command = '';
@@ -463,7 +524,33 @@ export class AddVocabulary {
                             removeAllEventListeners();
                             home.modifyDocument();
                             return;
+                        case '#automaticpaddingadjustment':
+                        case '#auto':
+                        case '#automatic-padding-adjustment':
+                        case '#automatische padding-anpassung':
+                        case '#automatischepaddinganpassung':
+                        case '#automatische-padding-anpassung':
+                        case '#apa':
+                            this.automaticPaddingAdjustment = true;
+                            this.command.split('').forEach(_ => {
+                                this.selectedInput.lastElementChild.remove();
+                                this.keys--;
+                            });
+                            this.command = '';
+                            this.commandMode = false;
+                            let value = Object.values(this.currentWord)[this.inputIndex];
+                            value = this.adjustInputWidth(this.selectedInput, value);                           
+                            return;
+                        case '#manualpaddingadjustment':
+                        case '#manual':
+                        case '#normalpaddingadjustment':
+                        case '#normal':
+                        case '#manual-padding-adjustment':
+                        case '#mpa':
+                        case '#npa':
                         default: {
+                            this.automaticPaddingAdjustment = false;
+                            this.paddingAnimation(this.selectedInput);
                             this.command.split('').forEach(_ => {
                                 this.selectedInput.lastElementChild.remove();
                                 this.keys--;
@@ -485,10 +572,7 @@ export class AddVocabulary {
 
                     if (this.inputIndex > 0) {
                         this.inputIndex--;
-                        this.selectedInput.classList.remove('selected');
-                        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.5vw`;
-                        this.selectedInput = <HTMLDivElement>this.container.children[this.inputIndex];
-                        this.keys = this.selectedInput.childElementCount;
+                        this.changeSelectedInput();
                     }
                     this.selectedInput.classList.add('selected');
                     return;
@@ -503,12 +587,8 @@ export class AddVocabulary {
 
                     if (this.inputIndex + 1 < 4) {
                         this.inputIndex++;
-                        this.selectedInput.classList.remove('selected');
-                        this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.5vw`;
-                        this.selectedInput = <HTMLDivElement>this.container.children[this.inputIndex];
-                        this.keys = this.selectedInput.childElementCount;
+                        this.changeSelectedInput();
                     }
-                    this.selectedInput.classList.add('selected');
                     return;
                 } else if (event.key === 'Backspace') {
                     if (this.selectedInput.lastElementChild) {
@@ -518,6 +598,18 @@ export class AddVocabulary {
 
                         if (this.command === '') {
                             this.commandMode = false;
+                        }
+
+                        if (this.automaticPaddingAdjustment && this.padding[this.inputIndex] > this.selectedInput.offsetHeight * 0.05) {
+                            let object = this.selectedInput.lastElementChild;
+                            let w = Math.round((this.selectedInput.getBoundingClientRect().width -
+                                parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) -
+                                parseFloat(window.getComputedStyle(this.selectedInput).paddingRight)) * 100) / 100;
+                            let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                            let h = w / this.keys * aspectRatio;
+                            let padding = Math.max((this.selectedInput.getBoundingClientRect().height - h) / 2, this.selectedInput.offsetHeight * 0.05);
+                            this.padding[this.inputIndex] = Math.max(padding, 1);
+                            this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
                         }
                     }
                     return;
@@ -532,7 +624,7 @@ export class AddVocabulary {
                     return;
                 }
             }
-            
+
             if (!this.commandMode) {
                 if (event.key === 'Backspace') {
                     if (this.selectedInput.lastElementChild) {
@@ -545,6 +637,20 @@ export class AddVocabulary {
                         );
 
                         this.keys--;
+
+                        if (this.automaticPaddingAdjustment && this.padding[this.inputIndex] > this.selectedInput.offsetHeight * 0.05) {
+                            let object = this.selectedInput.lastElementChild;
+                            let w = Math.round((this.selectedInput.getBoundingClientRect().width -
+                                parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) -
+                                parseFloat(window.getComputedStyle(this.selectedInput).paddingRight) -
+                                parseFloat(window.getComputedStyle(this.selectedInput).borderLeftWidth) -
+                                parseFloat(window.getComputedStyle(this.selectedInput).borderRightWidth)) * 100) / 100;
+                            let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                            let h = w / this.keys * aspectRatio;
+                            let padding = Math.max((this.selectedInput.getBoundingClientRect().height - h) / 2, this.selectedInput.offsetHeight * 0.05);
+                            this.padding[this.inputIndex] = Math.max(padding, 1);
+                            this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
+                        }
                     }
                     return;
                 } else if (event.key === 'Enter' || event.key === 'ArrowDown') {
@@ -669,18 +775,46 @@ export class AddVocabulary {
             object.id = `key${this.keys}-inp${this.inputIndex}`;
             object.style.height = `100%`;
             this.selectedInput.insertAdjacentElement('beforeend', object);
-            let width = object.clientHeight;
             object.hidden = true;
 
             object.addEventListener('load', _ => {
-                if (this.keys >= Math.floor(window.innerWidth / width)) {
-                    object.remove();
-                    for (let i = 0; i < this.keys; i++) {
-                        this.failureAnimation(<HTMLObjectElement>this.selectedInput.children[i]);
-                    }
-                    return;
-                }
                 object.hidden = false;
+                let width = Math.round(object.getBoundingClientRect().width * 100) / 100;
+                object.hidden = true;
+                let w = Math.round((this.selectedInput.getBoundingClientRect().width -
+                    parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) -
+                    parseFloat(window.getComputedStyle(this.selectedInput).paddingRight) -
+                    parseFloat(window.getComputedStyle(this.selectedInput).borderLeftWidth) -
+                    parseFloat(window.getComputedStyle(this.selectedInput).borderRightWidth)) * 100) / 100;
+                if (this.keys + 1 > w / width) {
+                    if (!this.automaticPaddingAdjustment) {
+                        object.remove();
+                        for (let i = 0; i < this.keys; i++) {
+                            this.failureAnimation(<HTMLObjectElement>this.selectedInput.children[i]);
+                        }
+                        return;
+                    } else {
+                        object.hidden = false;
+                        let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                        object.hidden = true;
+                        let h = (w / (this.keys + 1)) * aspectRatio;
+                        let padding = (this.selectedInput.getBoundingClientRect().height - h) / 2;
+                        console.log(padding);
+                        if (padding > this.selectedInput.getBoundingClientRect().height / 2 * 0.85) {
+                            object.remove();
+                            for (let i = 0; i < this.keys; i++) {
+                                this.failureAnimation(<HTMLObjectElement>this.selectedInput.children[i]);
+                            }
+                            return;
+                        } else {
+                            this.padding[this.inputIndex] = Math.max(padding, 1);
+                            this.animatedBorderWidth = parseFloat(window.getComputedStyle(this.selectedInput).borderTopWidth);
+                            this.automaticPaddingAnimation(this.selectedInput, true);
+                        }
+                    }
+                }
+
+                setTimeout(_ => { object.hidden = false; }, 10);
 
                 let svg = object.contentDocument;
                 if (event.key === '<') {
@@ -712,8 +846,8 @@ export class AddVocabulary {
     }
 
     changeSelectedInput(): void {
-        if (this.timeout) {
-            clearTimeout(this.timeout);
+        if (this.secondTimeout) {
+            clearTimeout(this.secondTimeout);
         }
 
         document.querySelectorAll('.selected').forEach((elem: HTMLDivElement) => {
@@ -726,13 +860,18 @@ export class AddVocabulary {
         this.selectedInput.classList.add('selected');
         this.keys = this.selectedInput.childElementCount;
         this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
-        this.paddingAnimation(this.selectedInput);
+        if (this.automaticPaddingAdjustment) {
+            this.automaticPaddingAnimation(this.selectedInput);
+        } else {
+            this.paddingAnimation(this.selectedInput);
+        }
     }
 
     failureAnimation(object: HTMLObjectElement): void {
-        if (!object) {
+        if (!object || object.classList.contains("animationActive")) {
             return;
         }
+
         let svg = object.contentDocument;
         let rect = svg.querySelector('#mainRect');
         let text = svg.querySelector('#text7');
@@ -749,13 +888,18 @@ export class AddVocabulary {
 
             { rotate: "0deg z", offset: 1 }
         ];
+        object.classList.add("animationActive");
 
         let animationOptions: KeyframeAnimationOptions = {
             duration: 500
-        }
+        };
 
         rect.animate(animationKeyframes, animationOptions);
         text.animate(animationKeyframes, animationOptions);
+
+        setTimeout(_ => {
+            object.classList.remove("animationActive");
+        }, 500);
     }
 
     idleAnimation(object: HTMLObjectElement): void {
@@ -790,6 +934,9 @@ export class AddVocabulary {
         input.style.borderColor = '#12dada';
         input.style.transition = 'none';
         input.style.paddingLeft = 0.005 * window.innerWidth - (parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2)) + parseFloat(window.getComputedStyle(input).borderLeftWidth.slice(0, -2))) + 'px';
+        input.style.paddingTop = this.padding[id] - parseFloat(window.getComputedStyle(input).borderTopWidth.slice(0, -2)) + 'px';
+        input.style.paddingRight = 0.005 * window.innerWidth - (parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2)) + parseFloat(window.getComputedStyle(input).borderLeftWidth.slice(0, -2))) + 'px';
+        input.style.paddingBottom = this.padding[id] - parseFloat(window.getComputedStyle(input).borderBottomWidth.slice(0, -2)) + 'px';
 
 
         setTimeout(_ => {
@@ -797,7 +944,7 @@ export class AddVocabulary {
             input.style.transition = 'none';
             input.style.transition = "border-color 1.5s";
 
-            this.timeout = setTimeout(_ => {
+            this.secondTimeout = setTimeout(_ => {
                 if (input.classList.contains('selected')) {
                     input.style.padding = `${this.padding[id]}px 0.25vw`;
                 } else {
@@ -807,6 +954,162 @@ export class AddVocabulary {
                 input.style.border = 'none';
             }, 1500)
         }, 1);
+    }
+
+    automaticPaddingAnimation(input: HTMLDivElement, adjustment?: boolean, cancelable?: boolean): void {
+        cancelable = cancelable === undefined || cancelable === true;
+        this.clearIntervals(adjustment == undefined);
+
+        let id = parseInt(input.id.charAt(3));
+        let marginLeft = parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2));
+        let borderLeft = 0.005 * input.offsetWidth - marginLeft;
+        let newPadding = this.padding[id];
+        let borderWidth = adjustment ? this.animatedBorderWidth : 0;
+        let $tepSize = (newPadding - borderWidth) / 20;
+        let stepSize = newPadding / 20;
+        let step = 0;
+        let timeout1 = adjustment ? 1 : 250 / 20;
+        let timeout2 = 250 / 20;
+        let timeout: number;
+        let interval1: number;
+        let interval2: number;
+
+        if (cancelable) this.firstInterval = setInterval(intervalFunction1.bind(this), timeout1);
+        else interval1 = setInterval(intervalFunction1.bind(this), timeout1);
+        
+        if (!cancelable) {
+            this.buttonLeft.addEventListener('mouseup', removeAll.bind(this));
+            this.buttonRight.addEventListener('mouseup', removeAll.bind(this));
+        }
+
+        function intervalFunction1() {
+            for (let i = 0; i < ((adjustment) ? 4 : 1); i++) {
+                this.animatedInputIndex = id;
+                borderWidth += $tepSize;
+                this.animatedBorderWidth = borderWidth;
+                input.style.borderWidth = `${borderWidth}px ${borderLeft / (20 - step)}px`;
+                input.style.borderStyle = 'solid';
+                input.style.borderColor = 'orange';
+                input.style.transition = 'none';
+                let paddingLeft = borderLeft - parseFloat(window.getComputedStyle(input).borderLeft);
+                let paddingTop = newPadding - parseFloat(window.getComputedStyle(input).borderTop);
+                input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+                step++;
+                if (step === 20) {
+                    if (cancelable) {
+                        clearInterval(this.firstInterval);
+                        this.firstTimeout = setTimeout(timeoutFunction.bind(this), timeout1 * 20);
+                    }
+                    else {
+                        clearInterval(interval1);
+                        timeout = setTimeout(timeoutFunction.bind(this), timeout1 * 20);
+                    }
+                    break;
+                }
+            }
+        }
+
+        function removeAll() {
+            clearInterval(interval1);
+            clearInterval(interval2);
+            clearTimeout(timeout);
+        }
+
+
+        function timeoutFunction() {
+            if (cancelable) this.secondInterval = setInterval(intervalFunction2.bind(this), timeout2);
+            else interval2 = setInterval(intervalFunction2.bind(this), timeout2);
+        }
+
+        function intervalFunction2() {
+            borderWidth -= stepSize;
+            this.animatedBorderWidth = borderWidth;
+            input.style.borderWidth = `${borderWidth}px ${borderLeft / (20 - step)}px`;
+            input.style.borderStyle = 'solid';
+            input.style.borderColor = 'orange';
+            let paddingLeft = borderLeft - parseFloat(window.getComputedStyle(input).borderLeft);
+            let paddingTop = newPadding - parseFloat(window.getComputedStyle(input).borderTop);
+            input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+            step--;
+            if (step === 0) {
+                input.style.border = 'none';
+                input.style.padding = `${newPadding}px ${borderLeft}px`;
+                clearInterval(cancelable ? this.secondInterval : interval2);
+
+                if (!cancelable) {
+                    this.buttonLeft.removeEventListener('mouseup', removeAll.bind(this));
+                    this.buttonRight.removeEventListener('mouseup', removeAll.bind(this));
+                }
+            }
+        }
+    }
+
+    adjustInputWidth(input: HTMLDivElement, value: string): string {
+        if (!input.hasChildNodes() && value.length == 0) {
+            if (this.automaticPaddingAdjustment) {
+                input.style.padding = 0.05 * input.offsetHeight + 'px 0.5vw';
+                input.style.border = 'none';
+                this.padding[parseInt(input.id.charAt(3))] = 0.05 * input.offsetHeight;
+                this.automaticPaddingAnimation(input, false, false);
+                return value;
+            }
+            this.paddingAnimation(input);
+            return value;
+        }
+
+        let padding: number;
+        let w = Math.round(input.getBoundingClientRect().width -
+            parseFloat(window.getComputedStyle(input).paddingLeft) -
+            parseFloat(window.getComputedStyle(input).paddingRight) -
+            parseFloat(window.getComputedStyle(input).borderLeftWidth) -
+            parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
+        let object = <HTMLObjectElement>input.firstElementChild;
+        let width = object.getBoundingClientRect().width;
+
+        if (w / width < value.length || this.automaticPaddingAdjustment) {
+            do {
+                w = Math.round(input.getBoundingClientRect().width -
+                    parseFloat(window.getComputedStyle(input).paddingLeft) -
+                    parseFloat(window.getComputedStyle(input).paddingRight) -
+                    parseFloat(window.getComputedStyle(input).borderLeftWidth) -
+                    parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
+                object = <HTMLObjectElement>input.lastElementChild;
+                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                let h = w / value.length * aspectRatio;
+                padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.getBoundingClientRect().height / 2 * 0.05);
+                if (padding > input.getBoundingClientRect().height / 2 * 0.85) {
+                    object.remove();
+                    value = value.slice(0, value.length - 1);
+                }
+            } while (padding > input.getBoundingClientRect().height / 2 * 0.85);
+
+            this.padding[this.inputIndex] = Math.max(padding, 1);
+            this.animatedBorderWidth = parseFloat(window.getComputedStyle(this.selectedInput).borderTopWidth);
+
+        }
+
+        if (this.automaticPaddingAdjustment) {
+            this.automaticPaddingAnimation(input, false, false);
+        } else {
+            this.paddingAnimation(this.selectedInput);
+        }
+
+        return value;
+    }
+
+    private clearIntervals(param: boolean): void {
+        clearInterval(this.firstInterval);
+        clearInterval(this.secondInterval);
+        clearTimeout(this.firstTimeout);
+
+        if (this.animatedInputIndex != undefined && param) {
+            let input = <HTMLDivElement>document.querySelector(`#div${this.animatedInputIndex}`);
+            let marginLeft = parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2));
+            let paddingLeft = 0.005 * input.offsetWidth - marginLeft;
+            let paddingTop = this.padding[this.animatedInputIndex];
+            input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+            input.style.border = 'none';
+        }
     }
 }
 
