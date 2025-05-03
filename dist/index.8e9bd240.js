@@ -633,6 +633,7 @@ function removeAllEventListeners() {
     document.removeEventListener('mouseover', training.mouseOverFunction);
     window.removeEventListener('resize', home.resizeFunction);
     window.removeEventListener('resize', training.resizeFunction);
+    window.removeEventListener('resize', inflectVocabulary.resizeFunction);
 }
 
 },{"./src/add-vocabulary":"gD3hq","./src/home-menu":"kONVW","./src/show-vocabulary":"hKazI","./src/vocabulary-training":"9B4CF","./src/inflect-vocabulary":"1keBs","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gD3hq":[function(require,module,exports,__globalThis) {
@@ -664,7 +665,6 @@ class AddVocabulary {
             selected: true,
             probability: 1
         };
-        this.intervals = [];
         this.animatedBorderWidth = 0;
         const request = window.indexedDB.open('Vocabulary', 1);
         request.addEventListener('error', (_)=>{
@@ -673,11 +673,11 @@ class AddVocabulary {
         request.addEventListener('success', (_)=>{
             this.database = request.result;
             const transaction = this.database.transaction('vocabulary', 'readonly');
-            transaction.onerror = (_)=>console.error(transaction.error);
+            transaction.onerror = ()=>console.error(transaction.error);
             const objectStore = transaction.objectStore('vocabulary');
             const req = objectStore.getAll();
-            req.onerror = (_)=>console.error(req.error);
-            req.onsuccess = (_)=>{
+            req.onerror = ()=>console.error(req.error);
+            req.onsuccess = ()=>{
                 this.vocabulary = req.result;
                 this.wordIndex = this.vocabulary.length;
             };
@@ -753,11 +753,11 @@ class AddVocabulary {
         request.addEventListener('success', (_1)=>{
             this.database = request.result;
             const transaction = this.database.transaction('vocabulary', 'readonly');
-            transaction.onerror = (_)=>console.error(transaction.error);
+            transaction.onerror = ()=>console.error(transaction.error);
             const objectStore = transaction.objectStore('vocabulary');
             const req = objectStore.getAll();
-            req.onerror = (_)=>console.error(req.error);
-            req.onsuccess = (_1)=>{
+            req.onerror = ()=>console.error(req.error);
+            req.onsuccess = ()=>{
                 this.vocabulary = req.result;
                 this.wordIndex = this.vocabulary.length;
                 this.container = document.querySelector('#container');
@@ -811,6 +811,23 @@ class AddVocabulary {
                 this.type();
             };
         });
+        let animation = null;
+        this.resizeFunction = ()=>{
+            if (animation !== null) {
+                clearTimeout(animation);
+                animation = null;
+            }
+            for(let i = 0; i < this.container.children.length; i++){
+                let div = this.container.children[i];
+                let value = Object.values(this.currentWord)[i];
+                this.adjustInputWidth(div, value, false);
+            }
+            animation = setTimeout(()=>{
+                for(let i = 0; i < this.container.childElementCount; i++)if (this.automaticPaddingAdjustment) this.automaticPaddingAnimation(this.container.children[i], false, false);
+                else this.paddingAnimation(this.container.children[i]);
+            }, 200);
+        };
+        window.addEventListener("resize", this.resizeFunction);
     }
     type() {
         for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].addEventListener('click', (_)=>{
@@ -857,7 +874,7 @@ class AddVocabulary {
                 this.buttonRight.classList.remove('clicked');
             }
         });
-        this.buttonLeftFunction = (_)=>{
+        this.buttonLeftFunction = ()=>{
             if (this.vocabulary[this.wordIndex - 1]) {
                 if (Object.values(this.currentWord).filter((value)=>value === '').length === 4 && this.wordIndex === this.vocabulary.length) {
                     for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
@@ -885,21 +902,21 @@ class AddVocabulary {
                             objects.forEach((obj)=>obj.hidden = false);
                             for(let i = 0; i < this.container.childElementCount; i++){
                                 let value = Object.values(this.currentWord)[i];
-                                value = this.adjustInputWidth(this.container.children[i], value);
+                                this.adjustInputWidth(this.container.children[i], value);
                             }
                         });
                     }
                 } else {
                     this.vocabulary[this.wordIndex] = this.currentWord;
                     const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                    transaction.onerror = (_)=>console.error(transaction.error);
+                    transaction.onerror = ()=>console.error(transaction.error);
                     const objectStore = transaction.objectStore(`vocabulary`);
                     const req = objectStore.get(this.wordIndex);
-                    req.onerror = (_)=>console.error(req.error);
-                    req.onsuccess = (_)=>{
+                    req.onerror = ()=>console.error(req.error);
+                    req.onsuccess = ()=>{
                         for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                         const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                        idontcare.onerror = (_)=>console.error(idontcare.error);
+                        idontcare.onerror = ()=>console.error(idontcare.error);
                         this.wordIndex--;
                         this.currentWord = this.vocabulary[this.wordIndex];
                         for(let i = 0; i < this.container.childElementCount; i++){
@@ -925,7 +942,7 @@ class AddVocabulary {
                             objects.forEach((obj)=>obj.hidden = false);
                             for(let i = 0; i < this.container.childElementCount; i++){
                                 let value = Object.values(this.currentWord)[i];
-                                value = this.adjustInputWidth(this.container.children[i], value);
+                                this.adjustInputWidth(this.container.children[i], value);
                             }
                         });
                     };
@@ -933,16 +950,16 @@ class AddVocabulary {
             }
         };
         this.buttonLeft.addEventListener('mouseup', this.buttonLeftFunction);
-        this.buttonRightFunction = (_)=>{
+        this.buttonRightFunction = ()=>{
             this.buttonRight.classList.remove('clicked');
             if (!this.vocabulary[this.wordIndex + 1]) {
                 this.vocabulary[this.wordIndex] = this.currentWord;
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                transaction.onerror = (_)=>console.error(transaction.error);
+                transaction.onerror = ()=>console.error(transaction.error);
                 const objectStore = transaction.objectStore(`vocabulary`);
                 const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                req.onerror = (_)=>console.error(req.error);
-                transaction.oncomplete = (_)=>{
+                req.onerror = ()=>console.error(req.error);
+                transaction.oncomplete = ()=>{
                     for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                     this.wordIndex++;
                     this.keys = 0;
@@ -966,17 +983,21 @@ class AddVocabulary {
                         }
                     }
                 };
+                for(let i = 0; i < this.container.childElementCount; i++){
+                    let value = Object.values(this.currentWord)[i];
+                    this.adjustInputWidth(this.container.children[i], value);
+                }
             } else {
                 this.vocabulary[this.wordIndex] = this.currentWord;
                 for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                transaction.onerror = (_)=>console.error(transaction.error);
+                transaction.onerror = ()=>console.error(transaction.error);
                 const objectStore = transaction.objectStore(`vocabulary`);
                 const req = objectStore.get(this.wordIndex);
-                req.onerror = (_)=>console.error(req.error);
-                req.onsuccess = (_)=>{
+                req.onerror = ()=>console.error(req.error);
+                req.onsuccess = ()=>{
                     const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                    idontcare.onerror = (_)=>console.error(idontcare.error);
+                    idontcare.onerror = ()=>console.error(idontcare.error);
                     this.wordIndex++;
                     this.currentWord = this.vocabulary[this.wordIndex];
                     for(let i = 0; i < this.container.childElementCount; i++){
@@ -1002,7 +1023,7 @@ class AddVocabulary {
                         objects.forEach((obj)=>obj.hidden = false);
                         for(let i = 0; i < this.container.childElementCount; i++){
                             let value = Object.values(this.currentWord)[i];
-                            value = this.adjustInputWidth(this.container.children[i], value);
+                            this.adjustInputWidth(this.container.children[i], value);
                         }
                     });
                 };
@@ -1096,7 +1117,7 @@ class AddVocabulary {
                             this.command = '';
                             this.commandMode = false;
                             let value = Object.values(this.currentWord)[this.inputIndex];
-                            value = this.adjustInputWidth(this.selectedInput, value);
+                            this.adjustInputWidth(this.selectedInput, value);
                             return;
                         case '#manualpaddingadjustment':
                         case '#manual':
@@ -1105,8 +1126,8 @@ class AddVocabulary {
                         case '#manual-padding-adjustment':
                         case '#mpa':
                         case '#npa':
-                        default:
                             this.automaticPaddingAdjustment = false;
+                        default:
                             this.paddingAnimation(this.selectedInput);
                             this.command.split('').forEach((_)=>{
                                 this.selectedInput.lastElementChild.remove();
@@ -1191,11 +1212,11 @@ class AddVocabulary {
                             if (!this.vocabulary[this.wordIndex + 1]) {
                                 this.vocabulary[this.wordIndex] = this.currentWord;
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                                transaction.onerror = (_)=>console.error(transaction.error);
+                                transaction.onerror = ()=>console.error(transaction.error);
                                 const objectStore = transaction.objectStore(`vocabulary`);
                                 const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                req.onerror = (_)=>console.error(req.error);
-                                transaction.oncomplete = (_)=>{
+                                req.onerror = ()=>console.error(req.error);
+                                transaction.oncomplete = ()=>{
                                     for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                                     this.wordIndex++;
                                     this.keys = 0;
@@ -1223,13 +1244,13 @@ class AddVocabulary {
                                 this.vocabulary[this.wordIndex] = this.currentWord;
                                 for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                                transaction.onerror = (_)=>console.error(transaction.error);
+                                transaction.onerror = ()=>console.error(transaction.error);
                                 const objectStore = transaction.objectStore(`vocabulary`);
                                 const req = objectStore.get(this.wordIndex);
-                                req.onerror = (_)=>console.error(req.error);
-                                req.onsuccess = (_)=>{
+                                req.onerror = ()=>console.error(req.error);
+                                req.onsuccess = ()=>{
                                     const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                    idontcare.onerror = (_)=>console.error(idontcare.error);
+                                    idontcare.onerror = ()=>console.error(idontcare.error);
                                     this.wordIndex++;
                                     this.currentWord = this.vocabulary[this.wordIndex];
                                     for(let i = 0; i < this.container.childElementCount; i++){
@@ -1252,10 +1273,10 @@ class AddVocabulary {
                             this.enterMode = false;
                         } else this.enterMode = true;
                         const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                        transaction.onerror = (_)=>console.error(transaction.error);
+                        transaction.onerror = ()=>console.error(transaction.error);
                         const objectStore = transaction.objectStore(`vocabulary`);
                         const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                        req.onerror = (_)=>console.error(req.error);
+                        req.onerror = ()=>console.error(req.error);
                         setTimeout((_)=>{
                             for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('shadow');
                         }, 250);
@@ -1450,6 +1471,9 @@ class AddVocabulary {
         let interval2;
         if (cancelable) this.firstInterval = setInterval(intervalFunction1.bind(this), timeout1);
         else interval1 = setInterval(intervalFunction1.bind(this), timeout1);
+        window.addEventListener('resize', resizeHandler.bind(this), {
+            passive: true
+        });
         if (!cancelable) {
             this.buttonLeft.addEventListener('mouseup', removeAll.bind(this));
             this.buttonRight.addEventListener('mouseup', removeAll.bind(this));
@@ -1508,40 +1532,51 @@ class AddVocabulary {
                 }
             }
         }
+        function resizeHandler() {
+            clearInterval(interval1);
+            clearInterval(interval2);
+            clearTimeout(timeout);
+            let paddingLeft = borderLeft - parseFloat(window.getComputedStyle(input).borderLeft);
+            let paddingTop = newPadding - parseFloat(window.getComputedStyle(input).borderTop);
+            input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+            input.style.border = 'none';
+            input.style.paddingTop = `${newPadding}px`;
+            input.style.paddingRight = `${borderLeft}px`;
+            input.style.paddingBottom = `${newPadding}px`;
+            input.style.paddingLeft = `${borderLeft}px`;
+        }
     }
-    adjustInputWidth(input, value) {
+    adjustInputWidth(input, value, animation) {
+        animation = animation === undefined || animation === true;
         if (!input.hasChildNodes() && value.length == 0) {
             if (this.automaticPaddingAdjustment) {
-                input.style.padding = 0.05 * input.offsetHeight + 'px 0.5vw';
+                if (input.classList.contains('selected')) input.style.padding = 0.05 * input.offsetHeight + 'px 0.25vw';
+                else input.style.padding = 0.05 * input.offsetHeight + 'px 0.5vw';
                 input.style.border = 'none';
                 this.padding[parseInt(input.id.charAt(3))] = 0.05 * input.offsetHeight;
-                this.automaticPaddingAnimation(input, false, false);
+                if (animation) this.automaticPaddingAnimation(input, false, false);
                 return value;
             }
-            this.paddingAnimation(input);
+            if (animation) this.paddingAnimation(input);
             return value;
         }
         let padding;
-        let w = Math.round(input.getBoundingClientRect().width - parseFloat(window.getComputedStyle(input).paddingLeft) - parseFloat(window.getComputedStyle(input).paddingRight) - parseFloat(window.getComputedStyle(input).borderLeftWidth) - parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
+        let w = Math.round(input.getBoundingClientRect().width - parseFloat(window.getComputedStyle(input).paddingLeft) - parseFloat(window.getComputedStyle(input).paddingRight) - parseFloat(window.getComputedStyle(input).borderLeftWidth) - parseFloat(window.getComputedStyle(input).borderRightWidth) * 100) / 100;
         let object = input.firstElementChild;
+        let id = parseInt(input.id.charAt(3));
         let width = object.getBoundingClientRect().width;
         if (w / width < value.length || this.automaticPaddingAdjustment) {
-            do {
-                w = Math.round(input.getBoundingClientRect().width - parseFloat(window.getComputedStyle(input).paddingLeft) - parseFloat(window.getComputedStyle(input).paddingRight) - parseFloat(window.getComputedStyle(input).borderLeftWidth) - parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
-                object = input.lastElementChild;
-                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
-                let h = w / value.length * aspectRatio;
-                padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.getBoundingClientRect().height / 2 * 0.05);
-                if (padding > input.getBoundingClientRect().height / 2 * 0.85) {
-                    object.remove();
-                    value = value.slice(0, value.length - 1);
-                }
-            }while (padding > input.getBoundingClientRect().height / 2 * 0.85);
-            this.padding[this.inputIndex] = Math.max(padding, 1);
-            this.animatedBorderWidth = parseFloat(window.getComputedStyle(this.selectedInput).borderTopWidth);
+            w = Math.round(input.getBoundingClientRect().width - parseFloat(window.getComputedStyle(input).paddingLeft) - parseFloat(window.getComputedStyle(input).paddingRight) - parseFloat(window.getComputedStyle(input).borderLeftWidth) - parseFloat(window.getComputedStyle(input).borderRightWidth) * 100) / 100;
+            object = input.lastElementChild;
+            let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+            let h = w / value.length * aspectRatio;
+            padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.offsetHeight * 0.05);
+            padding = Math.min(padding, input.getBoundingClientRect().height / 2 * 0.85);
+            this.padding[id] = Math.max(padding, 1);
+            this.animatedBorderWidth = parseFloat(window.getComputedStyle(input).borderTopWidth);
         }
-        if (this.automaticPaddingAdjustment) this.automaticPaddingAnimation(input, false, false);
-        else this.paddingAnimation(this.selectedInput);
+        if (this.automaticPaddingAdjustment && animation) this.automaticPaddingAnimation(input, false, false);
+        else if (animation) this.paddingAnimation(input);
         return value;
     }
     clearIntervals(param) {
@@ -2047,8 +2082,7 @@ class VocabularyTraining {
         this.time = 0;
         this.round = 0;
         this.backgroundColor = '#140063';
-        setInterval((_)=>this.time += 1, 1);
-        this.resizeFunction = (_)=>{
+        this.resizeFunction = ()=>{
             let inputs = document.querySelectorAll('.inp');
             inputs.forEach((inp)=>{
                 if (inp.firstChild && !inp.classList.contains('not-editable')) this.movementAnimation();
@@ -2066,11 +2100,11 @@ class VocabularyTraining {
         request.addEventListener('success', (_1)=>{
             this.database = request.result;
             const transaction = this.database.transaction('vocabulary', 'readonly');
-            transaction.onerror = (_)=>console.error(transaction.error);
+            transaction.onerror = ()=>console.error(transaction.error);
             const objectStore = transaction.objectStore('vocabulary');
             const req = objectStore.getAll();
-            req.onerror = (_)=>console.error(req.error);
-            req.onsuccess = (_1)=>{
+            req.onerror = ()=>console.error(req.error);
+            req.onsuccess = ()=>{
                 this.vocabulary = req.result;
                 this.backgroundColor = '#140063';
                 this.container = document.querySelector('#container');
@@ -2100,7 +2134,6 @@ class VocabularyTraining {
                     this.container.appendChild(div);
                     div.style.padding = `${0.05 * div.offsetHeight}px`;
                 }
-                let height;
                 this.mouseOverFunction = (event)=>{
                     let homeDiv = document.querySelector('.homeDiv');
                     if (homeDiv && homeDiv != event.target && event.target != this.navbar && !(document.querySelector('.homeButton') && event.target === document.querySelector('.homeButton')) && event.target != document.querySelector('.homeIcon')) {
@@ -2124,7 +2157,7 @@ class VocabularyTraining {
                         icon.style.height = '6vh';
                         hd.insertAdjacentElement('beforeend', button);
                         button.insertAdjacentElement('beforeend', icon);
-                        let clickFunction = (_1)=>{
+                        let clickFunction = ()=>{
                             (0, _.removeAllEventListeners)();
                             (0, _.home).modifyDocument();
                             return;
@@ -2366,13 +2399,13 @@ class VocabularyTraining {
                                     if (addition === 3) this.vocabulary[this.currentWordIndex].probability *= 0.8;
                                     else this.vocabulary[this.currentWordIndex].probability *= 1.2;
                                     const transaction = this.database.transaction('vocabulary', 'readwrite');
-                                    transaction.onerror = (_)=>console.error(transaction.error);
+                                    transaction.onerror = ()=>console.error(transaction.error);
                                     const objectStore = transaction.objectStore('vocabulary');
                                     const request = objectStore.get(this.currentWordIndex + 1);
-                                    request.onerror = (_)=>console.error(request.error);
-                                    request.onsuccess = (_)=>{
+                                    request.onerror = ()=>console.error(request.error);
+                                    request.onsuccess = ()=>{
                                         const req = objectStore.put(this.vocabulary[this.currentWordIndex], this.currentWordIndex + 1);
-                                        req.onerror = (_)=>console.error(req.error);
+                                        req.onerror = ()=>console.error(req.error);
                                     };
                                     setTimeout((_)=>{
                                         this.inputIndex = 0;
@@ -2696,11 +2729,14 @@ class InflectVocabulary {
         this.enterMode = false;
         this.tabMode = false;
         this.commandMode = false;
+        this.automaticPaddingAdjustment = false;
         this.command = "";
         this.tabulator = "";
         this.tabCount = 0;
         this.v = 1;
         this.padding = [];
+        this.animatedBorderWidth = 0;
+        this.borderColor = '#12dada';
         this.round = 0;
         this.failures = 0;
         this.totalAttempts = 0;
@@ -2737,16 +2773,16 @@ class InflectVocabulary {
             case 'nouns':
             default:
                 const request = window.indexedDB.open('Vocabulary', 1);
-                request.onerror = (_)=>console.error(request.error);
-                request.onsuccess = (_1)=>{
+                request.onerror = ()=>console.error(request.error);
+                request.onsuccess = ()=>{
                     this.database = request.result;
                     this.tabulator = '';
                     const transaction = this.database.transaction('inflected vocabulary', 'readonly');
-                    transaction.onerror = (_)=>console.error(transaction.error);
+                    transaction.onerror = ()=>console.error(transaction.error);
                     const objectStore = transaction.objectStore('inflected vocabulary');
                     const req = objectStore.getAll();
-                    req.onerror = (_)=>console.error(req.error);
-                    req.onsuccess = (_1)=>{
+                    req.onerror = ()=>console.error(req.error);
+                    req.onsuccess = ()=>{
                         this.vocabulary = req.result;
                         document.body.classList.add('inflectVocabularyBody');
                         this.iconPlaceholder.classList.add('inflectVocabularyIconPlaceholder');
@@ -2801,7 +2837,7 @@ class InflectVocabulary {
                                 this.commandMode = false;
                             });
                         });
-                        this.homeButton.onclick = (_1)=>{
+                        this.homeButton.onclick = ()=>{
                             (0, _.removeAllEventListeners)();
                             if (this.tabMode) this.cancelTabMode();
                             (0, _.home).modifyDocument();
@@ -2828,12 +2864,33 @@ class InflectVocabulary {
                 };
                 break;
         }
+        let animation = null;
+        this.resizeFunction = ()=>{
+            if (animation !== null) {
+                clearTimeout(animation);
+                animation = null;
+            }
+            for(let i = 4; i < this.container.children.length; i++)if (i % 3 > 0) {
+                let div = this.container.children[i];
+                let array = Object.values(this.currentWord)[i % 3 - 1];
+                let n = Math.floor(i / 3) - 1;
+                this.adjustInputWidth(div, array[n], false);
+            }
+            animation = setTimeout(()=>{
+                for(let j = 4; j < this.container.childElementCount; j++)if (j % 3 > 0) {
+                    if (this.automaticPaddingAdjustment) this.automaticPaddingAnimation(this.container.children[j], false, false);
+                    else this.paddingAnimation(this.container.children[j]);
+                }
+            }, 200);
+        };
+        window.addEventListener("resize", this.resizeFunction);
     }
     type(param) {
         switch(param){
             case 'verbs':
             case 'nouns':
                 this.keys = 0;
+                this.borderColor = param.includes('verb') ? '#ff5e01' : 'rgba(138, 43, 226, 1)';
                 document.querySelectorAll('.editable').forEach((element)=>{
                     element.addEventListener('click', (_)=>{
                         this.inputIndex = parseInt(element.id.slice(3));
@@ -2858,79 +2915,151 @@ class InflectVocabulary {
                     ];
                     if (this.commandMode) {
                         forbiddenCharacters.push('#');
-                        if (this.command.endsWith('%')) {
-                            if (this.command.startsWith('#p-')) {
-                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
-                                if (percentage >= 0 && percentage <= 100) {
-                                    this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
-                                    this.paddingAnimation(this.selectedInput);
-                                    this.command.split('').forEach((_)=>{
-                                        this.selectedInput.lastElementChild.remove();
-                                        this.keys--;
-                                    });
-                                    this.command = '';
-                                    this.commandMode = false;
-                                    return;
-                                }
-                            } else if (this.command.startsWith('#p+')) {
-                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
-                                if (percentage >= 0) {
-                                    this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
-                                    this.paddingAnimation(this.selectedInput);
-                                    this.command.split('').forEach((_)=>{
-                                        this.selectedInput.lastElementChild.remove();
-                                        this.keys--;
-                                    });
-                                    this.command = '';
-                                    this.commandMode = false;
-                                    return;
-                                }
-                            } else if (this.command.startsWith('#P+')) {
-                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
-                                if (percentage >= 0) {
-                                    this.padding.forEach((p, i)=>{
-                                        let div = document.querySelector(`#div${i}`);
-                                        if (i > 3 && i % 3 != 0) {
-                                            this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 + percentage / 100), div.clientHeight / 2 * 0.7), 1));
-                                            this.paddingAnimation(div);
-                                        }
-                                    });
-                                    this.command.split('').forEach((_)=>{
-                                        this.selectedInput.lastElementChild.remove();
-                                        this.keys--;
-                                    });
-                                    this.command = '';
-                                    this.commandMode = false;
-                                    return;
-                                }
-                            } else if (this.command.startsWith('#P-')) {
-                                let percentage = parseInt(this.command.slice(3, this.command.length - 1));
-                                if (percentage >= 0) {
-                                    this.padding.forEach((p, i)=>{
-                                        let div = document.querySelector(`#div${i}`);
-                                        if (i % 3 != 0) {
-                                            this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 - percentage / 100), div.clientHeight / 2 * 0.7), 1));
-                                            this.paddingAnimation(document.querySelector(`#div${i}`));
-                                        }
-                                    });
-                                    this.command.split('').forEach((_)=>{
-                                        this.selectedInput.lastElementChild.remove();
-                                        this.keys--;
-                                    });
-                                    this.command = '';
-                                    this.commandMode = false;
-                                    return;
+                        if (event.key === 'Enter') {
+                            if (this.command.endsWith('%')) {
+                                if (this.command.startsWith('#p-')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0 && percentage <= 100) {
+                                        this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 - percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                        this.paddingAnimation(this.selectedInput);
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#p+')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding[this.inputIndex] = Math.round(Math.max(Math.min(this.padding[this.inputIndex] * (1 + percentage / 100), this.selectedInput.clientHeight / 2 * 0.7), 1));
+                                        this.paddingAnimation(this.selectedInput);
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#P+')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding.forEach((p, i)=>{
+                                            let div = document.querySelector(`#div${i}`);
+                                            if (i > 3 && i % 3 != 0) {
+                                                this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 + percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                                this.paddingAnimation(div);
+                                            }
+                                        });
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
+                                } else if (this.command.startsWith('#P-')) {
+                                    let percentage = parseInt(this.command.slice(3, this.command.length - 1));
+                                    if (percentage >= 0) {
+                                        this.padding.forEach((p, i)=>{
+                                            let div = document.querySelector(`#div${i}`);
+                                            if (i % 3 != 0) {
+                                                this.padding[i] = Math.round(Math.max(Math.min(this.padding[i] * (1 - percentage / 100), div.clientHeight / 2 * 0.7), 1));
+                                                this.paddingAnimation(document.querySelector(`#div${i}`));
+                                            }
+                                        });
+                                        this.command.split('').forEach((_)=>{
+                                            this.selectedInput.lastElementChild.remove();
+                                            this.keys--;
+                                        });
+                                        this.command = '';
+                                        this.commandMode = false;
+                                        return;
+                                    }
                                 }
                             }
-                            this.command;
-                            this.command.split('').forEach((_)=>{
-                                this.selectedInput.lastElementChild.remove();
-                                this.keys--;
-                            });
-                            if (this.inputIndex < 18 - this.v) this.inputIndex += 3;
-                            else if (this.inputIndex === 19 - this.v) this.inputIndex = 5;
-                            this.commandMode = false;
-                            this.changeSelectedInput();
+                            switch(this.command.toLowerCase()){
+                                case '#<':
+                                case '#<-':
+                                case '#previous':
+                                case '#prvs':
+                                case '#vorheriges':
+                                case '#voriges':
+                                case '#prev':
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    this.buttonLeftFunction(event);
+                                    return;
+                                case '#>':
+                                case '#->':
+                                case '#next':
+                                case '#nxt':
+                                case "#n\xe4chstes":
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    this.buttonRightFunction(event);
+                                    return;
+                                case '#exit':
+                                case '#quit':
+                                case '#stop':
+                                case '#home':
+                                case '#stopp':
+                                case '#beenden':
+                                case "#hauptmen\xfc":
+                                case '#home menu':
+                                case '#h':
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    (0, _.removeAllEventListeners)();
+                                    (0, _.home).modifyDocument();
+                                    return;
+                                case '#automaticpaddingadjustment':
+                                case '#auto':
+                                case '#automatic-padding-adjustment':
+                                case '#automatische padding-anpassung':
+                                case '#automatischepaddinganpassung':
+                                case '#automatische-padding-anpassung':
+                                case '#apa':
+                                    this.automaticPaddingAdjustment = true;
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    this.adjustInputWidth(this.selectedInput, Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1], true);
+                                    this.borderColor = 'orange';
+                                    if (!param.includes('add')) this.borderColor = param.includes('verb') ? '#ff5e01' : 'rgba(138, 43, 226, 1)';
+                                    return;
+                                case '#manualpaddingadjustment':
+                                case '#manual':
+                                case '#normalpaddingadjustment':
+                                case '#normal':
+                                case '#manual-padding-adjustment':
+                                case '#mpa':
+                                case '#npa':
+                                    this.automaticPaddingAdjustment = false;
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.command = '';
+                                    this.commandMode = false;
+                                    this.borderColor = '#12dada';
+                                    if (!param.includes('add')) this.borderColor = param.includes('verb') ? '#ff5e01' : 'rgba(138, 43, 226, 1)';
+                                    return;
+                                default:
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
+                                    this.commandMode = false;
+                                    this.changeSelectedInput();
+                                    break;
+                            }
                             return;
                         } else if (event.key === 'ArrowUp') {
                             this.command.split('').forEach((_)=>{
@@ -2983,7 +3112,19 @@ class InflectVocabulary {
                                 this.selectedInput.lastElementChild.remove();
                                 this.command = this.command.slice(0, this.command.length - 1);
                                 this.keys--;
-                                if (this.command === '') this.commandMode = false;
+                                if (this.command === '') {
+                                    this.commandMode = false;
+                                    return;
+                                }
+                            }
+                            if (this.automaticPaddingAdjustment && this.padding[this.inputIndex] > this.selectedInput.offsetHeight * 0.05) {
+                                let object = this.selectedInput.lastElementChild;
+                                let w = Math.round((this.selectedInput.getBoundingClientRect().width - parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) - parseFloat(window.getComputedStyle(this.selectedInput).paddingRight)) * 100) / 100;
+                                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                                let h = w / this.keys * aspectRatio;
+                                let padding = Math.max((this.selectedInput.getBoundingClientRect().height - h) / 2, this.selectedInput.offsetHeight * 0.05);
+                                this.padding[this.inputIndex] = Math.max(padding, 1);
+                                this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
                             }
                         }
                         if (this.commandMode && (this.selectedInput.classList.contains('known-case') || forbiddenCharacters.includes(event.key) || event.key.length > 1)) return;
@@ -3130,7 +3271,7 @@ class InflectVocabulary {
                                     const transaction = this.database.transaction('inflected vocabulary', 'readwrite');
                                     const objectStore = transaction.objectStore('inflected vocabulary');
                                     const request = objectStore.put(this.vocabulary[this.currentWordIndex], this.currentWordIndex + 1);
-                                    request.onerror = (_)=>console.error(request.error);
+                                    request.onerror = ()=>console.error(request.error);
                                     setTimeout((_)=>{
                                         document.querySelectorAll('.selectedElement').forEach((div)=>{
                                             div.classList.remove('selectedElement');
@@ -3160,6 +3301,15 @@ class InflectVocabulary {
                                     value: array
                                 });
                                 this.keys--;
+                            }
+                            if (this.automaticPaddingAdjustment && this.padding[this.inputIndex] > this.selectedInput.offsetHeight * 0.05) {
+                                let object = this.selectedInput.lastElementChild;
+                                let w = Math.round((this.selectedInput.getBoundingClientRect().width - parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) - parseFloat(window.getComputedStyle(this.selectedInput).paddingRight)) * 100) / 100;
+                                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                                let h = w / this.keys * aspectRatio;
+                                let padding = Math.max((this.selectedInput.getBoundingClientRect().height - h) / 2, this.selectedInput.offsetHeight * 0.05);
+                                this.padding[this.inputIndex] = Math.max(padding, 1);
+                                this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
                             }
                             return;
                         } else if (this.selectedInput.classList.contains('known-case')) return;
@@ -3203,15 +3353,38 @@ class InflectVocabulary {
                     object.id = `key${this.keys}-inp${this.inputIndex}`;
                     object.style.height = `100%`;
                     this.selectedInput.insertAdjacentElement('beforeend', object);
-                    let width = object.clientHeight;
                     object.hidden = true;
                     object.addEventListener('load', (_1)=>{
-                        if (this.keys + 1 >= Math.floor(this.selectedInput.clientWidth / width)) {
-                            object.remove();
-                            for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
-                            return;
-                        }
                         object.hidden = false;
+                        let width = Math.round(object.getBoundingClientRect().width * 100) / 100;
+                        object.hidden = true;
+                        let w = Math.round((this.selectedInput.getBoundingClientRect().width - parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) - parseFloat(window.getComputedStyle(this.selectedInput).paddingRight) - parseFloat(window.getComputedStyle(this.selectedInput).borderLeftWidth) - parseFloat(window.getComputedStyle(this.selectedInput).borderRightWidth)) * 100) / 100;
+                        if (this.keys + 1 > w / width) {
+                            if (!this.automaticPaddingAdjustment) {
+                                object.remove();
+                                for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
+                                return;
+                            } else {
+                                object.hidden = false;
+                                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                                object.hidden = true;
+                                let h = w / (this.keys + 1) * aspectRatio;
+                                let padding = (this.selectedInput.getBoundingClientRect().height - h) / 2;
+                                if (padding > this.selectedInput.getBoundingClientRect().height / 2 * 0.85) {
+                                    object.remove();
+                                    for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
+                                    return;
+                                } else {
+                                    this.padding[this.inputIndex] = Math.max(padding, 1);
+                                    console.log(this.padding[this.inputIndex]);
+                                    this.animatedBorderWidth = parseFloat(window.getComputedStyle(this.selectedInput).borderTopWidth);
+                                    this.automaticPaddingAnimation(this.selectedInput, true, true);
+                                }
+                            }
+                        }
+                        setTimeout((_)=>{
+                            object.hidden = false;
+                        }, 10);
                         let svg = object.contentDocument;
                         if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
                         else if (event.key === '&') svg.querySelector('#tspan7').innerHTML = '&amp;';
@@ -3232,13 +3405,16 @@ class InflectVocabulary {
                 };
                 document.addEventListener('keydown', this.keydownFunction);
                 window.onkeyup = (event)=>{
-                    if (event.key === 'Tab') this.container.focus();
+                    if (event.key === 'Tab') {
+                        if (this.container instanceof HTMLElement) this.container.focus();
+                    }
                 };
                 this.startNewTrainingRound(param ? param : 'nouns');
                 break;
             case 'add verbs':
             case 'add nouns':
                 this.keys = 0;
+                this.borderColor = '#12dada';
                 document.querySelectorAll('.editable').forEach((element)=>{
                     element.addEventListener('click', (_)=>{
                         if (this.tabMode) this.cancelTabMode();
@@ -3258,12 +3434,12 @@ class InflectVocabulary {
                 };
                 let deletionMode = false;
                 let indicator;
-                let deletionFunction = (_)=>{
+                let deletionFunction = ()=>{
                     this.vocabulary.splice(this.wordIndex, 1);
                     const transaction = this.database.transaction('inflected vocabulary', 'readwrite');
                     const objectStore = transaction.objectStore('inflected vocabulary');
                     const request = objectStore.openCursor();
-                    request.onsuccess = (_)=>{
+                    request.onsuccess = ()=>{
                         let cursor = request.result;
                         if (cursor) {
                             let k = cursor.key;
@@ -3487,7 +3663,7 @@ class InflectVocabulary {
                         });
                     });
                 });
-                this.buttonLeftFunction = (_)=>{
+                this.buttonLeftFunction = ()=>{
                     if (this.tabMode) this.cancelTabMode();
                     let vocab = this.vocabulary.slice(0, this.wordIndex);
                     let wi = vocab.findLastIndex((w)=>w.verb === param.includes('verb'));
@@ -3558,21 +3734,32 @@ class InflectVocabulary {
                                     tabulatorIndexes
                                 ]);
                             }
+                            let objects = this.container.querySelectorAll('object');
+                            if (objects.length > 0) objects[objects.length - 1].addEventListener('load', (_)=>{
+                                objects.forEach((obj)=>obj.hidden = false);
+                                for(let i = 4; i < this.container.children.length; i++)if (i % 3 > 0) {
+                                    let div = this.container.children[i];
+                                    let array = Object.values(this.currentWord)[i % 3 - 1];
+                                    let n = Math.floor(i / 3) - 1;
+                                    this.adjustInputWidth(div, array[n]);
+                                }
+                            });
+                            else this.resizeFunction(null);
                             this.changeSelectedInput();
                         } else {
                             this.vocabulary[this.wordIndex] = this.currentWord;
                             const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
-                            transaction.onerror = (_)=>console.error(transaction.error);
+                            transaction.onerror = ()=>console.error(transaction.error);
                             const objectStore = transaction.objectStore(`inflected vocabulary`);
                             const req = objectStore.get(this.wordIndex);
-                            req.onerror = (_)=>console.error(req.error);
-                            req.onsuccess = (_)=>{
+                            req.onerror = ()=>console.error(req.error);
+                            req.onsuccess = ()=>{
                                 for(let i = 0; i < this.container.childElementCount; i++){
                                     this.container.children[i].classList.remove('savedElement');
                                     this.buttonLeft.classList.remove('click');
                                 }
                                 const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                idontcare.onerror = (_)=>console.error(idontcare.error);
+                                idontcare.onerror = ()=>console.error(idontcare.error);
                                 this.wordIndex = wi;
                                 let tabulatorStyle = false;
                                 this.currentWord = this.vocabulary[wi];
@@ -3634,23 +3821,34 @@ class InflectVocabulary {
                                         ]);
                                     }
                                 }
+                                let objects = this.container.querySelectorAll('object');
+                                if (objects.length > 0) objects[objects.length - 1].addEventListener('load', (_)=>{
+                                    objects.forEach((obj)=>obj.hidden = false);
+                                    for(let i = 4; i < this.container.children.length; i++)if (i % 3 > 0) {
+                                        let div = this.container.children[i];
+                                        let array = Object.values(this.currentWord)[i % 3 - 1];
+                                        let n = Math.floor(i / 3) - 1;
+                                        this.adjustInputWidth(div, array[n]);
+                                    }
+                                });
+                                else this.resizeFunction(null);
                             };
                         }
                     }
                 };
                 this.buttonLeft.addEventListener('mouseup', this.buttonLeftFunction);
-                this.buttonRightFunction = (_)=>{
+                this.buttonRightFunction = ()=>{
                     if (this.tabMode) this.cancelTabMode();
                     let vocab = this.vocabulary.slice(this.wordIndex + 1);
                     let wi = vocab.findIndex((w)=>w.verb === param.includes('verb')) >= 0 ? vocab.findIndex((w)=>w.verb === param.includes('verb')) + this.wordIndex + 1 : -1;
                     if (!this.vocabulary[wi]) {
                         this.vocabulary[this.wordIndex] = this.currentWord;
                         const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
-                        transaction.onerror = (_)=>console.error(transaction.error);
+                        transaction.onerror = ()=>console.error(transaction.error);
                         const objectStore = transaction.objectStore(`inflected vocabulary`);
                         const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                        req.onerror = (_)=>console.error(req.error);
-                        transaction.oncomplete = (_)=>{
+                        req.onerror = ()=>console.error(req.error);
+                        transaction.oncomplete = ()=>{
                             for(let i = 0; i < this.container.childElementCount; i++){
                                 this.container.children[i].classList.remove('savedElement');
                                 this.buttonRight.classList.remove('click');
@@ -3672,6 +3870,7 @@ class InflectVocabulary {
                             this.tabCount = 0;
                             this.selectedInput.classList.add('selectedElement');
                         };
+                        this.resizeFunction(null);
                     } else {
                         this.vocabulary[this.wordIndex] = this.currentWord;
                         for(let i = 0; i < this.container.childElementCount; i++){
@@ -3679,13 +3878,13 @@ class InflectVocabulary {
                             this.buttonRight.classList.remove('click');
                         }
                         const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
-                        transaction.onerror = (_)=>console.error(transaction.error);
+                        transaction.onerror = ()=>console.error(transaction.error);
                         const objectStore = transaction.objectStore(`inflected vocabulary`);
                         const req = objectStore.get(this.wordIndex);
-                        req.onerror = (_)=>console.error(req.error);
-                        req.onsuccess = (_)=>{
+                        req.onerror = ()=>console.error(req.error);
+                        req.onsuccess = ()=>{
                             const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                            idontcare.onerror = (_)=>console.error(idontcare.error);
+                            idontcare.onerror = ()=>console.error(idontcare.error);
                             this.wordIndex = wi;
                             this.currentWord = this.vocabulary[wi];
                             let overallIndexes = [];
@@ -3707,6 +3906,7 @@ class InflectVocabulary {
                                         object.style.height = `100%`;
                                         this.container.children[i].insertAdjacentElement('beforeend', object);
                                         if (tabulatorStyle) tabulatorIndexes.push(ii);
+                                        object.hidden = true;
                                         object.addEventListener('load', (_)=>{
                                             let svg = object.contentDocument;
                                             svg.querySelector('#tspan7').innerHTML = singular[Math.floor(i / 3) - 1].charAt(ii);
@@ -3732,6 +3932,7 @@ class InflectVocabulary {
                                         object.style.height = `100%`;
                                         this.container.children[i].insertAdjacentElement('beforeend', object);
                                         if (tabulatorStyle) tabulatorIndexes.push(ii);
+                                        object.hidden = true;
                                         object.addEventListener('load', (_)=>{
                                             let svg = object.contentDocument;
                                             svg.querySelector('#tspan7').innerHTML = plural[Math.floor(i / 3) - 1].charAt(ii);
@@ -3748,6 +3949,17 @@ class InflectVocabulary {
                                 }
                                 this.changeSelectedInput();
                             }
+                            let objects = this.container.querySelectorAll('object');
+                            if (objects.length > 0) objects[objects.length - 1].addEventListener('load', (_)=>{
+                                objects.forEach((obj)=>obj.hidden = false);
+                                for(let i = 4; i < this.container.children.length; i++)if (i % 3 > 0) {
+                                    let div = this.container.children[i];
+                                    let array = Object.values(this.currentWord)[i % 3 - 1];
+                                    let n = Math.floor(i / 3) - 1;
+                                    this.adjustInputWidth(div, array[n]);
+                                }
+                            });
+                            else this.resizeFunction(null);
                         };
                     }
                 };
@@ -3826,19 +4038,14 @@ class InflectVocabulary {
                                     }
                                 }
                             }
-                            switch(this.command){
+                            switch(this.command.toLowerCase()){
                                 case '#<':
                                 case '#<-':
                                 case '#previous':
                                 case '#prvs':
                                 case '#vorheriges':
                                 case '#voriges':
-                                case '#Vorheriges':
-                                case '#Voriges':
-                                case '#Previous':
-                                case '#Prev':
                                 case '#prev':
-                                case '#p':
                                     this.command = '';
                                     this.commandMode = false;
                                     this.buttonLeftFunction(event);
@@ -3848,10 +4055,6 @@ class InflectVocabulary {
                                 case '#next':
                                 case '#nxt':
                                 case "#n\xe4chstes":
-                                case "#N\xe4chstes":
-                                case '#Next':
-                                case '#Nxt':
-                                case '#n':
                                     this.command = '';
                                     this.commandMode = false;
                                     this.buttonRightFunction(event);
@@ -3862,9 +4065,7 @@ class InflectVocabulary {
                                 case '#home':
                                 case '#stopp':
                                 case '#beenden':
-                                case '#Stopp':
                                 case "#hauptmen\xfc":
-                                case "#Hauptmen\xfc":
                                 case '#home menu':
                                 case '#h':
                                     this.command = '';
@@ -3872,16 +4073,40 @@ class InflectVocabulary {
                                     (0, _.removeAllEventListeners)();
                                     (0, _.home).modifyDocument();
                                     return;
-                                default:
+                                case '#automaticpaddingadjustment':
+                                case '#auto':
+                                case '#automatic-padding-adjustment':
+                                case '#automatische padding-anpassung':
+                                case '#automatischepaddinganpassung':
+                                case '#automatische-padding-anpassung':
+                                case '#apa':
+                                    this.automaticPaddingAdjustment = true;
                                     this.command.split('').forEach((_)=>{
                                         this.selectedInput.lastElementChild.remove();
                                         this.keys--;
                                     });
                                     this.command = '';
                                     this.commandMode = false;
-                                    this.changeSelectedInput();
-                                    break;
+                                    console.log('apaze', this.padding);
+                                    this.adjustInputWidth(this.selectedInput, Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1], true);
+                                    return;
+                                case '#manualpaddingadjustment':
+                                case '#manual':
+                                case '#normalpaddingadjustment':
+                                case '#normal':
+                                case '#manual-padding-adjustment':
+                                case '#mpa':
+                                case '#npa':
+                                    this.automaticPaddingAdjustment = false;
+                                default:
+                                    this.paddingAnimation(this.selectedInput);
+                                    this.command.split('').forEach((_)=>{
+                                        this.selectedInput.lastElementChild.remove();
+                                        this.keys--;
+                                    });
                             }
+                            this.command = '';
+                            this.commandMode = false;
                             return;
                         } else if (event.key === 'ArrowUp') {
                             this.command.split('').forEach((_)=>{
@@ -3934,7 +4159,10 @@ class InflectVocabulary {
                                 this.selectedInput.lastElementChild.remove();
                                 this.command = this.command.slice(0, this.command.length - 1);
                                 this.keys--;
-                                if (this.command === '') this.commandMode = false;
+                                if (this.command === '') {
+                                    this.commandMode = false;
+                                    return;
+                                }
                             }
                         }
                         if (this.commandMode && (this.selectedInput.classList.contains('known-case') || forbiddenCharacters.includes(event.key) || event.key.length > 1)) return;
@@ -3981,11 +4209,11 @@ class InflectVocabulary {
                                     if (!this.vocabulary[wi]) {
                                         this.vocabulary[this.wordIndex] = this.currentWord;
                                         const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
-                                        transaction.onerror = (_)=>console.error(transaction.error);
+                                        transaction.onerror = ()=>console.error(transaction.error);
                                         const objectStore = transaction.objectStore(`inflected vocabulary`);
                                         const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                        req.onerror = (_)=>console.error(req.error);
-                                        transaction.oncomplete = (_)=>{
+                                        req.onerror = ()=>console.error(req.error);
+                                        transaction.oncomplete = ()=>{
                                             for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
                                             this.wordIndex++;
                                             this.keys = 0;
@@ -4008,13 +4236,13 @@ class InflectVocabulary {
                                         this.vocabulary[this.wordIndex] = this.currentWord;
                                         for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
                                         const transaction = this.database.transaction(`inflected vocabulary`, 'readwrite');
-                                        transaction.onerror = (_)=>console.error(transaction.error);
+                                        transaction.onerror = ()=>console.error(transaction.error);
                                         const objectStore = transaction.objectStore(`inflected vocabulary`);
                                         const req = objectStore.get(this.wordIndex);
-                                        req.onerror = (_)=>console.error(req.error);
-                                        req.onsuccess = (_)=>{
+                                        req.onerror = ()=>console.error(req.error);
+                                        req.onsuccess = ()=>{
                                             const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                            idontcare.onerror = (_)=>console.error(idontcare.error);
+                                            idontcare.onerror = ()=>console.error(idontcare.error);
                                             this.wordIndex = wi;
                                             this.currentWord = this.vocabulary[wi];
                                             let overallIndexes = [];
@@ -4084,7 +4312,7 @@ class InflectVocabulary {
                                 const transaction = this.database.transaction('inflected vocabulary', 'readwrite');
                                 const objectStore = transaction.objectStore('inflected vocabulary');
                                 const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                req.onerror = (_)=>console.error(req.error);
+                                req.onerror = ()=>console.error(req.error);
                                 setTimeout((_)=>{
                                     for(let i = 0; i < this.container.childElementCount; i++)this.container.children[i].classList.remove('savedElement');
                                 }, 250);
@@ -4116,6 +4344,15 @@ class InflectVocabulary {
                                 this.keys--;
                                 if (this.tabMode) this.tabulator = this.tabulator.slice(0, this.tabulator.length - 1);
                             } else if (this.tabMode) this.cancelTabMode();
+                            if (this.automaticPaddingAdjustment && this.padding[this.inputIndex] > this.selectedInput.offsetHeight * 0.05) {
+                                let object = this.selectedInput.lastElementChild;
+                                let w = Math.round((this.selectedInput.getBoundingClientRect().width - parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) - parseFloat(window.getComputedStyle(this.selectedInput).paddingRight)) * 100) / 100;
+                                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                                let h = w / this.keys * aspectRatio;
+                                let padding = Math.max((this.selectedInput.getBoundingClientRect().height - h) / 2, this.selectedInput.offsetHeight * 0.05);
+                                this.padding[this.inputIndex] = Math.max(padding, 1);
+                                this.selectedInput.style.padding = `${this.padding[this.inputIndex]}px 0.25vw`;
+                            }
                             return;
                         } else if (event.key === '#') {
                             this.command = '';
@@ -4222,24 +4459,45 @@ class InflectVocabulary {
                     object.id = `key${this.keys}-inp${this.inputIndex}`;
                     object.style.height = `100%`;
                     this.selectedInput.insertAdjacentElement('beforeend', object);
-                    let width = object.clientHeight;
                     object.hidden = true;
                     object.addEventListener('load', (_1)=>{
-                        if (this.keys + 1 >= Math.floor(this.selectedInput.clientWidth / width)) {
-                            object.remove();
-                            for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
-                            return;
-                        }
                         object.hidden = false;
+                        let width = Math.round(object.getBoundingClientRect().width * 100) / 100;
+                        object.hidden = true;
+                        let w = Math.round((this.selectedInput.getBoundingClientRect().width - parseFloat(window.getComputedStyle(this.selectedInput).paddingLeft) - parseFloat(window.getComputedStyle(this.selectedInput).paddingRight) - parseFloat(window.getComputedStyle(this.selectedInput).borderLeftWidth) - parseFloat(window.getComputedStyle(this.selectedInput).borderRightWidth)) * 100) / 100;
+                        if (this.keys + 1 > w / width) {
+                            if (!this.automaticPaddingAdjustment) {
+                                object.remove();
+                                for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
+                                return;
+                            } else {
+                                object.hidden = false;
+                                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                                object.hidden = true;
+                                let h = w / (this.keys + 1) * aspectRatio;
+                                let padding = (this.selectedInput.getBoundingClientRect().height - h) / 2;
+                                if (padding > this.selectedInput.getBoundingClientRect().height / 2 * 0.85) {
+                                    object.remove();
+                                    for(let i = 0; i < this.keys; i++)this.failureAnimation(this.selectedInput.children[i]);
+                                    return;
+                                } else {
+                                    this.padding[this.inputIndex] = Math.max(padding, 1);
+                                    console.log(this.padding[this.inputIndex]);
+                                    this.animatedBorderWidth = parseFloat(window.getComputedStyle(this.selectedInput).borderTopWidth);
+                                    this.automaticPaddingAnimation(this.selectedInput, true, true);
+                                }
+                            }
+                        }
+                        setTimeout((_)=>{
+                            object.hidden = false;
+                        }, 10);
                         let svg = object.contentDocument;
                         if (event.key === '<') svg.querySelector('#tspan7').innerHTML = '&lt;';
                         else if (event.key === '&') svg.querySelector('#tspan7').innerHTML = '&amp;';
                         else svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
-                        let n = Math.floor(this.inputIndex / 3) - 1;
-                        let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
                         if (!this.commandMode) {
-                            let arr = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
-                            arr[Math.floor(this.inputIndex / 3) - 1] += event.key;
+                            let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                            array[Math.floor(this.inputIndex / 3) - 1] += event.key;
                             Object.defineProperty(this.currentWord, Object.keys(this.currentWord)[this.inputIndex % 3 - 1], {
                                 value: array
                             });
@@ -4247,13 +4505,8 @@ class InflectVocabulary {
                             this.command += event.key;
                             (0, _.training).commandAnimation(object);
                         }
-                        if (this.tabMode) {
-                            if (array[n].slice(-6, -1) === '^tab^') this.tabulator = '';
-                            this.tabulator += event.key;
-                            this.tabulatorAnimation(object);
-                            object.classList.add('tabulator');
-                        } else this.idleAnimation(object);
                         this.keys++;
+                        this.idleAnimation(object);
                     });
                 };
                 document.addEventListener('keydown', this.keydownFunction);
@@ -4267,9 +4520,7 @@ class InflectVocabulary {
     }
     empty(param) {
         let l = param.includes('verb') ? 3 : 6;
-        let array = [];
-        for(let i = 0; i < l; i++)array.push('');
-        return array;
+        return new Array(l).fill('');
     }
     changeSelectedInput() {
         if (this.timeout) {
@@ -4287,7 +4538,8 @@ class InflectVocabulary {
         if (!matches ? false : matches.length % 2 === 0) this.selectedInput.classList.remove('tab');
         this.selectedInput.classList.add('selectedElement');
         this.keys = this.selectedInput.childElementCount;
-        this.paddingAnimation(this.selectedInput);
+        if (this.automaticPaddingAdjustment) this.automaticPaddingAnimation(this.selectedInput);
+        else this.paddingAnimation(this.selectedInput);
     }
     cancelTabMode() {
         let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
@@ -4365,7 +4617,7 @@ class InflectVocabulary {
             return;
         }
         function isEmpty(w) {
-            return w.singular.filter((s)=>s.trim() === '').length === (param.includes('verb') ? 6 : 3) && w.plural.filter((p)=>p.trim() === '').length === (param.includes('verb') ? 6 : 3);
+            return w.singular.filter((s)=>s.trim() === '').length === (!param.includes('verb') ? 6 : 3) && w.plural.filter((p)=>p.trim() === '').length === (!param.includes('verb') ? 6 : 3);
         }
         this.round++;
         let overallProbabilty = 0;
@@ -4412,6 +4664,10 @@ class InflectVocabulary {
         let specificationDiv = document.getElementById(`div${rn > 5 - v ? 2 + (rn - 5 + v) * 3 : 1 + (rn + 1) * 3}`);
         specificationDiv.classList.add('known-case');
         specificationDiv.innerHTML = `<span>${knownCase}</span>`;
+        if (document.getElementById('div4') === specificationDiv) {
+            this.inputIndex = 7;
+            this.changeSelectedInput();
+        }
         let array = this.empty(param);
         array[rn > 5 - v ? rn - 6 + v : rn] = knownCase;
         this.currentWord = {
@@ -4659,11 +4915,15 @@ class InflectVocabulary {
         input.style.borderBottomWidth = `${this.padding[id]}px`;
         input.style.borderLeftWidth = `${borderLeft}px`;
         input.style.borderStyle = 'solid';
-        input.style.borderColor = '#12dada';
+        input.style.borderColor = this.borderColor;
+        input.style.paddingLeft = `${borderLeft - parseInt(window.getComputedStyle(input).borderLeftWidth.slice(0, -2))}px`;
+        input.style.paddingTop = this.padding[id] - parseFloat(window.getComputedStyle(input).borderTopWidth.slice(0, -2)) + 'px';
+        input.style.paddingRight = borderLeft - parseFloat(window.getComputedStyle(input).borderRightWidth.slice(0, -2)) + 'px';
+        input.style.paddingBottom = this.padding[id] - parseFloat(window.getComputedStyle(input).borderBottomWidth.slice(0, -2)) + 'px';
         input.style.transition = 'none';
         input.style.paddingLeft = borderLeft - parseInt(window.getComputedStyle(input).borderLeft.slice(0, -2)) + 'px';
         setTimeout((_)=>{
-            input.style.borderColor = '#06011b';
+            input.style.borderColor = 'transparent';
             input.style.transition = "border-color 1.5s";
             this.timeout = setTimeout((_)=>{
                 input.style.padding = `${this.padding[id]}px ${0.05 * input.offsetHeight}px`;
@@ -4671,6 +4931,151 @@ class InflectVocabulary {
                 input.style.transition = 'none';
             }, 1500);
         }, 1);
+    }
+    automaticPaddingAnimation(input, adjustment, cancelable) {
+        console.log(this.padding);
+        cancelable = cancelable === undefined || cancelable === true;
+        clearInterval(this.firstInterval);
+        clearInterval(this.secondInterval);
+        clearTimeout(this.firstTimeout);
+        if (cancelable && this.animatedInputIndex != undefined && adjustment === undefined) {
+            let input = document.querySelector(`#div${this.animatedInputIndex}`);
+            let paddingLeft = 0.05 * input.offsetHeight;
+            let paddingTop = this.padding[this.animatedInputIndex];
+            input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+            input.style.border = 'none';
+        }
+        if (input.classList.contains('known-case')) return;
+        let id = parseInt(input.id.slice(3));
+        let borderLeft = 0.05 * input.offsetHeight;
+        let newPadding = this.padding[id];
+        console.log(newPadding, this.padding);
+        let borderWidth = adjustment ? this.animatedBorderWidth : 0;
+        let $tepSize = (newPadding - borderWidth) / 20;
+        let stepSize = newPadding / 20;
+        let step = 0;
+        let timeout1 = adjustment ? 1 : 12.5;
+        let timeout2 = 12.5;
+        let timeout;
+        let interval1;
+        let interval2;
+        if (cancelable) this.firstInterval = setInterval(intervalFunction1.bind(this), timeout1);
+        else interval1 = setInterval(intervalFunction1.bind(this), timeout1);
+        window.addEventListener('resize', resizeHandler.bind(this), {
+            passive: true
+        });
+        function intervalFunction1() {
+            for(let i = 0; i < (adjustment ? 4 : 1); i++){
+                this.animatedInputIndex = id;
+                borderWidth += $tepSize;
+                this.animatedBorderWidth = borderWidth;
+                input.style.borderTopWidth = `${borderWidth}px`;
+                input.style.borderRightWidth = `${20 - step === 0 ? borderLeft : borderLeft / (20 - step)}px`;
+                input.style.borderBottomWidth = `${borderWidth}px`;
+                input.style.borderLeftWidth = `${20 - step === 0 ? borderLeft : borderLeft / (20 - step)}px`;
+                input.style.borderStyle = 'solid';
+                input.style.borderColor = this.borderColor;
+                input.style.transition = 'none';
+                let paddingLeft = borderLeft - parseFloat(window.getComputedStyle(input).borderLeftWidth);
+                let paddingTop = newPadding - parseFloat(window.getComputedStyle(input).borderTopWidth);
+                if (input == this.selectedInput) console.log(newPadding, input.offsetHeight / 2 * 0.05);
+                input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+                step++;
+                if (step === 20) {
+                    if (cancelable) {
+                        clearInterval(this.firstInterval);
+                        this.firstTimeout = setTimeout(timeoutFunction.bind(this), timeout1 * 20);
+                    } else {
+                        clearInterval(interval1);
+                        timeout = setTimeout(timeoutFunction.bind(this), timeout1 * 20);
+                    }
+                    break;
+                }
+            }
+        }
+        function timeoutFunction() {
+            if (cancelable) this.secondInterval = setInterval(intervalFunction2.bind(this), timeout2);
+            else interval2 = setInterval(intervalFunction2.bind(this), timeout2);
+        }
+        function intervalFunction2() {
+            borderWidth -= stepSize;
+            this.animatedBorderWidth = borderWidth;
+            input.style.borderTopWidth = `${borderWidth}px`;
+            input.style.borderRightWidth = `${20 - step === 0 ? borderLeft : borderLeft / (20 - step)}px`;
+            input.style.borderBottomWidth = `${borderWidth}px`;
+            input.style.borderLeftWidth = `${20 - step === 0 ? borderLeft : borderLeft / (20 - step)}px`;
+            input.style.borderStyle = 'solid';
+            input.style.borderColor = this.borderColor;
+            let paddingLeft = borderLeft - parseFloat(window.getComputedStyle(input).borderLeft);
+            let paddingTop = newPadding - parseFloat(window.getComputedStyle(input).borderTop);
+            input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+            step--;
+            if (step === 0) {
+                input.style.border = 'none';
+                input.style.paddingTop = `${newPadding}px`;
+                input.style.paddingRight = `${borderLeft}px`;
+                input.style.paddingBottom = `${newPadding}px`;
+                input.style.paddingLeft = `${borderLeft}px`;
+                window.removeEventListener('resize', resizeHandler.bind(this));
+                clearInterval(cancelable ? this.secondInterval : interval2);
+            }
+        }
+        function resizeHandler() {
+            clearInterval(interval1);
+            clearInterval(interval2);
+            clearTimeout(timeout);
+            let paddingLeft = borderLeft - parseFloat(window.getComputedStyle(input).borderLeft);
+            let paddingTop = newPadding - parseFloat(window.getComputedStyle(input).borderTop);
+            input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+            input.style.border = 'none';
+            input.style.paddingTop = `${newPadding}px`;
+            input.style.paddingRight = `${borderLeft}px`;
+            input.style.paddingBottom = `${newPadding}px`;
+            input.style.paddingLeft = `${borderLeft}px`;
+        }
+    }
+    adjustInputWidth(input, value, animation) {
+        console.log(this.padding);
+        animation = animation === undefined || animation === true;
+        if (input.classList.contains('known-case')) return;
+        if (!input.hasChildNodes() && value.length == 0) {
+            console.log('apparently empty');
+            if (this.automaticPaddingAdjustment) {
+                if (input.classList.contains('selected')) input.style.padding = 0.05 * input.offsetHeight + 'px';
+                else input.style.padding = 0.05 * input.offsetHeight + 'px';
+                input.style.border = 'none';
+                this.padding[parseInt(input.id.slice(3))] = 0.05 * input.offsetHeight;
+                if (animation) this.automaticPaddingAnimation(input, false, false);
+                return;
+            }
+            if (animation) this.paddingAnimation(input);
+            return;
+        }
+        let padding;
+        let w = Math.round(input.getBoundingClientRect().width - parseFloat(window.getComputedStyle(input).paddingLeft) - parseFloat(window.getComputedStyle(input).paddingRight) - parseFloat(window.getComputedStyle(input).borderLeftWidth) - parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
+        let object = input.lastElementChild;
+        let id = parseInt(input.id.slice(3));
+        if (!object) return;
+        let width = object.getBoundingClientRect().width;
+        if (w / width < value.length || this.automaticPaddingAdjustment) {
+            w = Math.round(input.getBoundingClientRect().width - parseFloat(window.getComputedStyle(input).paddingLeft) - parseFloat(window.getComputedStyle(input).paddingRight) - parseFloat(window.getComputedStyle(input).borderLeftWidth) - parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
+            let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+            let h = w / value.length * aspectRatio;
+            padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.getBoundingClientRect().height / 2 * 0.05);
+            this.padding[id] = Math.min(padding, 0.85 * input.offsetHeight / 2);
+            this.animatedBorderWidth = parseFloat(window.getComputedStyle(input).borderTopWidth);
+        }
+        if (!animation) {
+            clearInterval(this.firstInterval);
+            clearInterval(this.secondInterval);
+            clearTimeout(this.firstTimeout);
+            return;
+        }
+        if (this.automaticPaddingAdjustment) {
+            console.log('automatic animation');
+            this.automaticPaddingAnimation(input, false, false);
+        } else this.paddingAnimation(input);
+        return;
     }
 }
 

@@ -17,7 +17,7 @@
 121C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\css-text-align-last.js133809285686665884 0
 68C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\.parcelrc133809285636430039 0
 82C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\fs133809285638966217 1
-63C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist133895492803619380 1
+63C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist133907462536811807 1
 88C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\error-ex\LICENSE133809285692053548 0
 87C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\semver\index.js133809285699088548 0
 100C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\entities\lib\decode.d.ts.map133809285691386591 0
@@ -37,7 +37,7 @@
 108C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\codeframe\test\fixtures\a.js133809285637413221 0
 84C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\is-json\test133809285693193269 1
 86C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\weak-lru-cache133809285699860790 1
-67C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\index.ts133809285636478204 0
+67C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\index.ts133901351804756563 0
 116C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\object-observe.js133809285687670310 0
 122C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\wasm-mutable-globals.js133809285688372202 0
 103C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\regions\NF.js133809285689481206 0
@@ -60,7 +60,7 @@
 97C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\js-yaml\lib\type\merge.js133809285693416762 0
 107C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\types-internal\src\Cache.js133809285657945554 0
 108C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\dnssec.js133809285686852861 0
-80C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\add-vocabulary.ts133895492803105895 0
+80C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\add-vocabulary.ts133907442204338718 0
 104C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\cosmiconfig\dist\Explorer.js.map133809285690348146 0
 89C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\timsort\README.md133809285699367261 0
 123C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@swc\helpers\cjs\_unsupported_iterable_to_array.cjs133809285684486762 0
@@ -95,7 +95,7 @@
 101C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@lezer\lr\dist\constants.d.ts133809285636873479 0
 65C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\static133809999816467312 1
 97C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\chalk\source\templates.js133809285690024812 0
-68C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\style.css133876540583333302 0
+68C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\style.css133898928243353370 0
 123C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\css-media-interaction.js133809285686519973 0
 103C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\regions\FO.js133809285689017100 0
 99C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\domhandler\lib\esm\index.js133809285690804697 0
@@ -103,7 +103,7 @@
 124C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\posthtml\node_modules\htmlparser2\lib\FeedHandler.js133809285698343421 0
 103C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\plugin\lib\PluginAPI.js133809285639809883 0
 94C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\color-convert\route.js133809285690191602 0
-84C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\inflect-vocabulary.ts133895494773775880 0
+84C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\inflect-vocabulary.ts133907462535994107 0
 117C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\watcher\src\windows\WindowsBackend.cc133809285658810512 0
 112C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\posthtml\node_modules\dom-serializer\lib133809285697791087 1
 127C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\lmdb\dependencies\lmdb\libraries\liblmdb\sample-bdb.txt133809285695682708 0
@@ -187,7 +187,7 @@
 96C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\react-refresh\runtime.js133809285698828910 0
 103C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\regions\VC.js133809285689851895 0
 102C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\detect-libc\bin\detect-libc.js133809285690626270 0
-75C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\home-menu.ts133809999816357242 0
+75C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\home-menu.ts133901485756650338 0
 116C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\css-first-line.js133809285686392941 0
 115C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\lmdb\dependencies\lz4\lib\lz4frame_static.h133809285695889987 0
 122C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@swc\helpers\src\_define_enumerable_properties.mjs133809285685244395 0
@@ -209,7 +209,7 @@
 123C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\credential-management.js133809285686186217 0
 120C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\permissions-policy.js133809285687847986 0
 114C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\utility-types\dist\functional-helpers.d.ts133809285699840784 0
-85C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\vocabulary-training.ts133810594755740965 0
+85C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\src\vocabulary-training.ts133901351605260208 0
 124C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\runtime-js\src\helpers\worker\wasm-loader.js133809285640517583 0
 76C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\.bin133809285636686050 1
 111C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\json-parse-even-better-errors\README.md133809285693484069 0
@@ -988,7 +988,7 @@
 94C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\ordered-binary\LICENSE133809285697209024 0
 92C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\semver\ranges\gtr.js133809285699143586 0
 99C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\semver\ranges\intersects.js133809285699153642 0
-86C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.3a01df49.css.map133888557268661433 0
+86C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.3a01df49.css.map133907429046586649 0
 131C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\core\test\fixtures\application-targets\package.json133809285638331524 0
 98C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\picocolors\picocolors.d.ts133809285697330225 0
 103C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\semver\ranges\max-satisfying.js133809285699163636 0
@@ -1586,7 +1586,7 @@
 103C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\transformer-svg\LICENSE133809285657800333 0
 104C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\fs\src\NodeFS.browser.js133809285638932350 0
 113C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\msgpackr-extract\node_modules\detect-libc133809285696586856 1
-84C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\favicon.f38e2425.svg133888557268941347 0
+84C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\favicon.f38e2425.svg133904267810681669 0
 109C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\cache\src\IDBCache.browser.js133809285637236097 0
 134C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\msgpackr-extract\node_modules\node-gyp-build-optional-packages133809285696636196 1
 103C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\regions\OM.js133809285689481206 0
@@ -2924,7 +2924,7 @@
 109C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\utils\test\DefaultMap.test.js133809285658433680 0
 126C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\core\test\fixtures\invalid-source-not-file\src133809285638524302 1
 117C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\getrandomvalues.js133809285687185415 0
-85C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.8e9bd240.js.map133895492803619380 0
+85C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.8e9bd240.js.map133907462536811807 0
 112C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\hashchange.js133809285687185415 0
 106C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\heif.js133809285687185415 0
 106C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\hevc.js133809285687185415 0
@@ -3117,7 +3117,7 @@
 119C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@parcel\transformer-posthtml\src\loadPlugins.js133809285657740975 0
 115C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\text-overflow.js133809285688195000 0
 118C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\text-size-adjust.js133809285688195000 0
-81C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.8e9bd240.js133895492803569715 0
+81C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.8e9bd240.js133907462536781897 0
 113C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\text-stroke.js133809285688195000 0
 108C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\caniuse-lite\data\features\tls1-1.js133809285688195000 0
 120C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\node_modules\@swc\helpers\_\_array_without_holes\package.json133809285683283011 0
@@ -4245,11 +4245,11 @@
 75C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\favicon.svg133809999816467312 0
 72C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\home.svg133809285700048757 0
 72C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\icon.svg133809285700018767 0
-82C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.3a01df49.css133888557268587080 0
+82C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.3a01df49.css133907429046518940 0
 81C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.59c73e0a.js133809984183906426 0
 85C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.59c73e0a.js.map133809984184052893 0
 85C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.5b63dd8f.js.map133809999816276903 0
-74C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.html133888557269214150 0
+74C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\index.html133906608361184815 0
 68C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\keys133809999816357242 1
 76C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\training.svg133809285700048757 0
 75C:\Users\Admin\Desktop\Benny\Latein-Trainer\Latein-Trainer\dist\version.svg133809285700048757 0

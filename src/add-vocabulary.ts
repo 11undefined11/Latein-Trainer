@@ -32,16 +32,16 @@ export class AddVocabulary {
 
     firstInterval: number;
     secondInterval: number;
-    intervals: number[] = [];
     firstTimeout: number;
     animatedInputIndex: number;
     animatedBorderWidth = 0;
 
-    keyDownFunction: EventListenerOrEventListenerObject;
+    keyDownFunction: EventListener;
     maxCharacters: number;
     buttonLeftFunction: (_: any) => void;
     buttonRightFunction: (_: any) => void;
     secondTimeout: number;
+    resizeFunction: () => void;
 
     constructor() {
         const request = window.indexedDB.open('Vocabulary', 1);
@@ -54,11 +54,11 @@ export class AddVocabulary {
             this.database = request.result;
 
             const transaction = this.database.transaction('vocabulary', 'readonly');
-            transaction.onerror = _ => console.error(transaction.error);
+            transaction.onerror = () => console.error(transaction.error);
             const objectStore = transaction.objectStore('vocabulary');
             const req = objectStore.getAll();
-            req.onerror = _ => console.error(req.error);
-            req.onsuccess = _ => {
+            req.onerror = () => console.error(req.error);
+            req.onsuccess = () => {
                 this.vocabulary = req.result;
                 this.wordIndex = this.vocabulary.length;
             }
@@ -122,11 +122,11 @@ export class AddVocabulary {
             this.database = request.result;
 
             const transaction = this.database.transaction('vocabulary', 'readonly');
-            transaction.onerror = _ => console.error(transaction.error);
+            transaction.onerror = () => console.error(transaction.error);
             const objectStore = transaction.objectStore('vocabulary');
             const req = objectStore.getAll();
-            req.onerror = _ => console.error(req.error);
-            req.onsuccess = _ => {
+            req.onerror = () => console.error(req.error);
+            req.onsuccess = () => {
                 this.vocabulary = req.result;
                 this.wordIndex = this.vocabulary.length;
 
@@ -194,6 +194,31 @@ export class AddVocabulary {
             }
         })
 
+        let animation: number | null = null;
+        this.resizeFunction = () => {
+            if (animation !== null) {
+                clearTimeout(animation);
+                animation = null;
+            }
+
+            for (let i = 0; i < this.container.children.length; i++) {
+                let div = <HTMLDivElement>this.container.children[i];
+                let value = Object.values(this.currentWord)[i];
+                this.adjustInputWidth(div, value, false);
+            }
+
+            animation = setTimeout((): void => {
+                for (let i = 0; i < this.container.childElementCount; i++) {
+                    if (this.automaticPaddingAdjustment) {
+                        this.automaticPaddingAnimation(<HTMLDivElement>this.container.children[i], false, false);
+                    } else {
+                        this.paddingAnimation(<HTMLDivElement>this.container.children[i]);
+                    }
+                }
+            }, 200);
+        };
+
+        window.addEventListener("resize", this.resizeFunction);
     }
 
     type(): void {
@@ -250,7 +275,7 @@ export class AddVocabulary {
             }
         });
 
-        this.buttonLeftFunction = _ => {
+        this.buttonLeftFunction = () => {
             if (this.vocabulary[this.wordIndex - 1]) {
                 if (
                     Object.values(this.currentWord).filter((value) => value === '').length === 4
@@ -292,7 +317,7 @@ export class AddVocabulary {
                                 objects.forEach(obj => obj.hidden = false);
                                 for (let i = 0; i < this.container.childElementCount; i++) {
                                     let value = Object.values(this.currentWord)[i];
-                                    value = this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                                    this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
                                 }
                             });
                         }
@@ -302,17 +327,17 @@ export class AddVocabulary {
                     this.vocabulary[this.wordIndex] = this.currentWord;
 
                     const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                    transaction.onerror = _ => console.error(transaction.error);
+                    transaction.onerror = () => console.error(transaction.error);
                     const objectStore = transaction.objectStore(`vocabulary`);
                     const req = objectStore.get(this.wordIndex);
-                    req.onerror = _ => console.error(req.error);
-                    req.onsuccess = _ => {
+                    req.onerror = () => console.error(req.error);
+                    req.onsuccess = () => {
                         for (let i = 0; i < this.container.childElementCount; i++) {
                             this.container.children[i].classList.remove('shadow');
                         }
 
                         const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                        idontcare.onerror = _ => console.error(idontcare.error);
+                        idontcare.onerror = () => console.error(idontcare.error);
 
                         this.wordIndex--;
 
@@ -347,7 +372,7 @@ export class AddVocabulary {
                                 objects.forEach(obj => obj.hidden = false);
                                 for (let i = 0; i < this.container.childElementCount; i++) {
                                     let value = Object.values(this.currentWord)[i];
-                                    value = this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                                    this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
                                 }
                             });
                         }
@@ -357,17 +382,17 @@ export class AddVocabulary {
         };
         this.buttonLeft.addEventListener('mouseup', this.buttonLeftFunction);
 
-        this.buttonRightFunction = _ => {
+        this.buttonRightFunction = () => {
             this.buttonRight.classList.remove('clicked');
             if (!this.vocabulary[this.wordIndex + 1]) {
                 this.vocabulary[this.wordIndex] = this.currentWord;
 
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                transaction.onerror = _ => console.error(transaction.error);
+                transaction.onerror = () => console.error(transaction.error);
                 const objectStore = transaction.objectStore(`vocabulary`);
                 const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                req.onerror = _ => console.error(req.error)
-                transaction.oncomplete = _ => {
+                req.onerror = () => console.error(req.error)
+                transaction.oncomplete = () => {
                     for (let i = 0; i < this.container.childElementCount; i++) {
                         this.container.children[i].classList.remove('shadow');
                     }
@@ -396,6 +421,12 @@ export class AddVocabulary {
                         }
                     }
                 }
+
+                for (let i = 0; i < this.container.childElementCount; i++) {
+                    let value = Object.values(this.currentWord)[i];
+                    this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                }
+
             } else {
                 this.vocabulary[this.wordIndex] = this.currentWord;
 
@@ -404,13 +435,13 @@ export class AddVocabulary {
                 }
 
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                transaction.onerror = _ => console.error(transaction.error);
+                transaction.onerror = () => console.error(transaction.error);
                 const objectStore = transaction.objectStore(`vocabulary`);
                 const req = objectStore.get(this.wordIndex);
-                req.onerror = _ => console.error(req.error);
-                req.onsuccess = _ => {
+                req.onerror = () => console.error(req.error);
+                req.onsuccess = () => {
                     const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                    idontcare.onerror = _ => console.error(idontcare.error);
+                    idontcare.onerror = () => console.error(idontcare.error);
 
                     this.wordIndex++;
                     this.currentWord = this.vocabulary[this.wordIndex];
@@ -445,7 +476,7 @@ export class AddVocabulary {
                             objects.forEach(obj => obj.hidden = false);
                             for (let i = 0; i < this.container.childElementCount; i++) {
                                 let value = Object.values(this.currentWord)[i];
-                                value = this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                                this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
                             }
                         });
                     }
@@ -539,7 +570,7 @@ export class AddVocabulary {
                             this.command = '';
                             this.commandMode = false;
                             let value = Object.values(this.currentWord)[this.inputIndex];
-                            value = this.adjustInputWidth(this.selectedInput, value);                           
+                            this.adjustInputWidth(this.selectedInput, value);
                             return;
                         case '#manualpaddingadjustment':
                         case '#manual':
@@ -548,8 +579,8 @@ export class AddVocabulary {
                         case '#manual-padding-adjustment':
                         case '#mpa':
                         case '#npa':
-                        default: {
                             this.automaticPaddingAdjustment = false;
+                        default: {
                             this.paddingAnimation(this.selectedInput);
                             this.command.split('').forEach(_ => {
                                 this.selectedInput.lastElementChild.remove();
@@ -668,11 +699,11 @@ export class AddVocabulary {
                                 this.vocabulary[this.wordIndex] = this.currentWord;
 
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                                transaction.onerror = _ => console.error(transaction.error);
+                                transaction.onerror = () => console.error(transaction.error);
                                 const objectStore = transaction.objectStore(`vocabulary`);
                                 const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                req.onerror = _ => console.error(req.error)
-                                transaction.oncomplete = _ => {
+                                req.onerror = () => console.error(req.error)
+                                transaction.oncomplete = () => {
                                     for (let i = 0; i < this.container.childElementCount; i++) {
                                         this.container.children[i].classList.remove('shadow');
                                     }
@@ -709,13 +740,13 @@ export class AddVocabulary {
                                 }
 
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                                transaction.onerror = _ => console.error(transaction.error);
+                                transaction.onerror = () => console.error(transaction.error);
                                 const objectStore = transaction.objectStore(`vocabulary`);
                                 const req = objectStore.get(this.wordIndex);
-                                req.onerror = _ => console.error(req.error);
-                                req.onsuccess = _ => {
+                                req.onerror = () => console.error(req.error);
+                                req.onsuccess = () => {
                                     const idontcare = objectStore.put(this.currentWord, this.wordIndex + 1);
-                                    idontcare.onerror = _ => console.error(idontcare.error);
+                                    idontcare.onerror = () => console.error(idontcare.error);
 
                                     this.wordIndex++;
                                     this.currentWord = this.vocabulary[this.wordIndex];
@@ -744,10 +775,10 @@ export class AddVocabulary {
                         }
 
                         const transaction = this.database.transaction(`vocabulary`, 'readwrite');
-                        transaction.onerror = _ => console.error(transaction.error);
+                        transaction.onerror = () => console.error(transaction.error);
                         const objectStore = transaction.objectStore(`vocabulary`);
                         const req = objectStore.put(this.currentWord, this.wordIndex + 1);
-                        req.onerror = _ => console.error(req.error);
+                        req.onerror = () => console.error(req.error);
 
                         setTimeout(_ => {
                             for (let i = 0; i < this.container.childElementCount; i++) {
@@ -977,6 +1008,8 @@ export class AddVocabulary {
         if (cancelable) this.firstInterval = setInterval(intervalFunction1.bind(this), timeout1);
         else interval1 = setInterval(intervalFunction1.bind(this), timeout1);
         
+        window.addEventListener('resize', resizeHandler.bind(this), { passive: true });
+
         if (!cancelable) {
             this.buttonLeft.addEventListener('mouseup', removeAll.bind(this));
             this.buttonRight.addEventListener('mouseup', removeAll.bind(this));
@@ -1042,18 +1075,39 @@ export class AddVocabulary {
                 }
             }
         }
+
+        function resizeHandler() {
+            clearInterval(interval1);
+            clearInterval(interval2);
+            clearTimeout(timeout);
+
+            let paddingLeft = borderLeft - parseFloat(window.getComputedStyle(input).borderLeft);
+            let paddingTop = newPadding - parseFloat(window.getComputedStyle(input).borderTop);
+            input.style.padding = `${paddingTop}px ${paddingLeft}px`;
+            input.style.border = 'none';
+            input.style.paddingTop = `${newPadding}px`;
+            input.style.paddingRight = `${borderLeft}px`;
+            input.style.paddingBottom = `${newPadding}px`;
+            input.style.paddingLeft = `${borderLeft}px`;
+        }
     }
 
-    adjustInputWidth(input: HTMLDivElement, value: string): string {
+    adjustInputWidth(input: HTMLDivElement, value: string, animation?: boolean): string {
+        animation = animation === undefined || animation === true;
+
         if (!input.hasChildNodes() && value.length == 0) {
             if (this.automaticPaddingAdjustment) {
-                input.style.padding = 0.05 * input.offsetHeight + 'px 0.5vw';
+                if (input.classList.contains('selected')) {
+                    input.style.padding = 0.05 * input.offsetHeight + 'px 0.25vw';
+                } else {
+                    input.style.padding = 0.05 * input.offsetHeight + 'px 0.5vw';
+                }
                 input.style.border = 'none';
                 this.padding[parseInt(input.id.charAt(3))] = 0.05 * input.offsetHeight;
-                this.automaticPaddingAnimation(input, false, false);
+                if (animation) this.automaticPaddingAnimation(input, false, false);
                 return value;
             }
-            this.paddingAnimation(input);
+            if (animation) this.paddingAnimation(input);
             return value;
         }
 
@@ -1062,36 +1116,31 @@ export class AddVocabulary {
             parseFloat(window.getComputedStyle(input).paddingLeft) -
             parseFloat(window.getComputedStyle(input).paddingRight) -
             parseFloat(window.getComputedStyle(input).borderLeftWidth) -
-            parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
+            parseFloat(window.getComputedStyle(input).borderRightWidth) * 100) / 100;
         let object = <HTMLObjectElement>input.firstElementChild;
+        let id = parseInt(input.id.charAt(3));
         let width = object.getBoundingClientRect().width;
 
         if (w / width < value.length || this.automaticPaddingAdjustment) {
-            do {
-                w = Math.round(input.getBoundingClientRect().width -
-                    parseFloat(window.getComputedStyle(input).paddingLeft) -
-                    parseFloat(window.getComputedStyle(input).paddingRight) -
-                    parseFloat(window.getComputedStyle(input).borderLeftWidth) -
-                    parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
-                object = <HTMLObjectElement>input.lastElementChild;
-                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
-                let h = w / value.length * aspectRatio;
-                padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.getBoundingClientRect().height / 2 * 0.05);
-                if (padding > input.getBoundingClientRect().height / 2 * 0.85) {
-                    object.remove();
-                    value = value.slice(0, value.length - 1);
-                }
-            } while (padding > input.getBoundingClientRect().height / 2 * 0.85);
+            w = Math.round(input.getBoundingClientRect().width -
+                parseFloat(window.getComputedStyle(input).paddingLeft) -
+                parseFloat(window.getComputedStyle(input).paddingRight) -
+                parseFloat(window.getComputedStyle(input).borderLeftWidth) -
+                parseFloat(window.getComputedStyle(input).borderRightWidth) * 100) / 100;
+            object = <HTMLObjectElement>input.lastElementChild;
+            let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+            let h = w / value.length * aspectRatio;
+            padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.offsetHeight * 0.05);
+            padding = Math.min(padding, input.getBoundingClientRect().height / 2 * 0.85);
 
-            this.padding[this.inputIndex] = Math.max(padding, 1);
-            this.animatedBorderWidth = parseFloat(window.getComputedStyle(this.selectedInput).borderTopWidth);
-
+            this.padding[id] = Math.max(padding, 1);
+            this.animatedBorderWidth = parseFloat(window.getComputedStyle(input).borderTopWidth);
         }
 
-        if (this.automaticPaddingAdjustment) {
+        if (this.automaticPaddingAdjustment && animation) {
             this.automaticPaddingAnimation(input, false, false);
-        } else {
-            this.paddingAnimation(this.selectedInput);
+        } else if (animation) {
+            this.paddingAnimation(input);
         }
 
         return value;

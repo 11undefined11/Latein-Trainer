@@ -6,8 +6,8 @@ export class HomeMenu {
     navbar: HTMLDivElement;
 
     command = '';
-    keyDownFunction: EventListenerOrEventListenerObject;
-    resizeFunction: EventListenerOrEventListenerObject;
+    keyDownFunction: EventListener;
+    resizeFunction: EventListener;
 
     constructor() {
         this.modifyDocument();

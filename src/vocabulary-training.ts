@@ -9,9 +9,9 @@ export class VocabularyTraining {
     vocabulary: WordBundle[];
     database: IDBDatabase;
 
-    keyDownFunction: EventListenerOrEventListenerObject;
-    mouseOverFunction: EventListenerOrEventListenerObject;
-    resizeFunction: EventListenerOrEventListenerObject;
+    keyDownFunction: EventListener;
+    mouseOverFunction: EventListener;
+    resizeFunction: EventListener;
 
     currentWord: WordBundle;
     currentWordIndex: number;
@@ -31,9 +31,7 @@ export class VocabularyTraining {
     backgroundColor = '#140063';
 
     constructor() {
-        setInterval(_ => this.time += 1, 1);
-
-        this.resizeFunction = _ => {
+        this.resizeFunction = () => {
             let inputs = document.querySelectorAll('.inp');
             inputs.forEach((inp: HTMLDivElement) => {
                 if (inp.firstChild && !inp.classList.contains('not-editable')) this.movementAnimation();
@@ -56,11 +54,11 @@ export class VocabularyTraining {
             this.database = request.result;
 
             const transaction = this.database.transaction('vocabulary', 'readonly');
-            transaction.onerror = _ => console.error(transaction.error);
+            transaction.onerror = () => console.error(transaction.error);
             const objectStore = transaction.objectStore('vocabulary');
             const req = objectStore.getAll();
-            req.onerror = _ => console.error(req.error);
-            req.onsuccess = _ => {
+            req.onerror = () => console.error(req.error);
+            req.onsuccess = () => {
                 this.vocabulary = req.result;
                 this.backgroundColor = '#140063'
                 this.container = document.querySelector('#container');
@@ -97,7 +95,6 @@ export class VocabularyTraining {
                     div.style.padding = `${0.05 * div.offsetHeight}px`;
                 }
 
-                let height: number;
                 this.mouseOverFunction = (event: MouseEvent) => {
                     let homeDiv = <HTMLDivElement>document.querySelector('.homeDiv');
                     if (
@@ -141,7 +138,7 @@ export class VocabularyTraining {
                         hd.insertAdjacentElement('beforeend', button);
                         button.insertAdjacentElement('beforeend', icon);
 
-                        let clickFunction = _ => {
+                        let clickFunction = () => {
                             removeAllEventListeners();
                             home.modifyDocument();
                             return;
@@ -464,13 +461,13 @@ export class VocabularyTraining {
                                     }
 
                                     const transaction = this.database.transaction('vocabulary', 'readwrite');
-                                    transaction.onerror = _ => console.error(transaction.error);
+                                    transaction.onerror = () => console.error(transaction.error);
                                     const objectStore = transaction.objectStore('vocabulary');
                                     const request = objectStore.get(this.currentWordIndex + 1);
-                                    request.onerror = _ => console.error(request.error);
-                                    request.onsuccess = _ => {
+                                    request.onerror = () => console.error(request.error);
+                                    request.onsuccess = () => {
                                         const req = objectStore.put(this.vocabulary[this.currentWordIndex], this.currentWordIndex + 1);
-                                        req.onerror = _ => console.error(req.error);
+                                        req.onerror = () => console.error(req.error);
                                     }
 
                                     setTimeout(_ => {

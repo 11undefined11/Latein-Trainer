@@ -340,6 +340,11 @@ input.checkbox {
   }
 }
 
+.editable {
+  flex-direction: row;
+  display: flex;
+}
+
 .firstrow {
   text-align: center;
   color: #fff;
