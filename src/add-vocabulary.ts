@@ -570,7 +570,7 @@ export class AddVocabulary {
                             this.command = '';
                             this.commandMode = false;
                             let value = Object.values(this.currentWord)[this.inputIndex];
-                            this.adjustInputWidth(this.selectedInput, value);
+                            this.adjustInputWidth(this.selectedInput, value, true);
                             return;
                         case '#manualpaddingadjustment':
                         case '#manual':
@@ -1122,16 +1122,15 @@ export class AddVocabulary {
         let width = object.getBoundingClientRect().width;
 
         if (w / width < value.length || this.automaticPaddingAdjustment) {
-            w = Math.round(input.getBoundingClientRect().width -
+            w = Math.round((input.getBoundingClientRect().width -
                 parseFloat(window.getComputedStyle(input).paddingLeft) -
                 parseFloat(window.getComputedStyle(input).paddingRight) -
                 parseFloat(window.getComputedStyle(input).borderLeftWidth) -
-                parseFloat(window.getComputedStyle(input).borderRightWidth) * 100) / 100;
+                parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100) / 100;
             object = <HTMLObjectElement>input.lastElementChild;
             let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
             let h = w / value.length * aspectRatio;
             padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.offsetHeight * 0.05);
-            padding = Math.min(padding, input.getBoundingClientRect().height / 2 * 0.85);
 
             this.padding[id] = Math.max(padding, 1);
             this.animatedBorderWidth = parseFloat(window.getComputedStyle(input).borderTopWidth);

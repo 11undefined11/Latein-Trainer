@@ -605,7 +605,8 @@ export class InflectVocabulary {
                                         setTimeout(_ => {
                                             inp.classList.remove('shadowDesign');
                                             inp.classList.add('redShadowDesign');
-                                        }, 500)
+                                        }, 500);
+                                        return;
                                     }
                                 }
                             }
@@ -1152,6 +1153,11 @@ export class InflectVocabulary {
                     this.deletionAnimation(this.deletionButton, 2000, 'normal');
                     let broken = false;
                     this.container.querySelectorAll('object').forEach((object) => {
+                        if (!object.contentDocument) {
+                            return;
+                        }
+                        this.deletionAnimation(object, 2000, 'normal');
+
                         if (object.contentDocument.getElementById('tspan7')) {
                             this.deletionAnimation(object, 2000, 'normal');
                         } else {
@@ -1183,6 +1189,9 @@ export class InflectVocabulary {
                     deletionMode = false;
                     this.deletionAnimation(this.deletionButton, 1, 'reverse');
                     this.container.querySelectorAll('object').forEach((object) => {
+                        if (!object.contentDocument) {
+                            return;
+                        }
                         if (object.contentDocument.getElementById('tspan7')) {
                             this.deletionAnimation(object, 1, 'reverse');
                         }
@@ -1698,7 +1707,7 @@ export class InflectVocabulary {
                                     });
                                     this.command = '';
                                     this.commandMode = false;
-                                    console.log('apaze', this.padding)
+                                    this.borderColor = 'orange';
                                     this.adjustInputWidth(this.selectedInput, Object.values(this.currentWord)[this.inputIndex % 3 - 1][Math.floor(this.inputIndex / 3) - 1], true);
                                     return;
                                 case '#manualpaddingadjustment':
@@ -2065,6 +2074,7 @@ export class InflectVocabulary {
                             this.command = '';
                             this.commandMode = true;
                         } else if (event.key === 'Tab') {
+                            console.log(this.tabulator);
                             if (!this.tabMode) {
                                 if (this.tabCount >= 2) {
                                     let array = <string[]>Object.values(this.currentWord)[this.inputIndex % 3 - 1];
@@ -2241,12 +2251,24 @@ export class InflectVocabulary {
 
                         if (!this.commandMode) {
                             let array = Object.values(this.currentWord)[this.inputIndex % 3 - 1];
+                            let n = Math.floor(this.inputIndex / 3) - 1
                             array[Math.floor(this.inputIndex / 3) - 1] += event.key;
                             Object.defineProperty(
                                 this.currentWord,
                                 Object.keys(this.currentWord)[this.inputIndex % 3 - 1],
                                 { value: array }
                             );
+                            if (this.tabMode) {
+                                if (array[n].slice(-6, -1) === '^tab^') {
+                                    this.tabulator = '';
+                                }
+                                this.tabulator += event.key;
+                                this.tabulatorAnimation(object);
+                                object.classList.add('tabulator');
+                            } else {
+                                this.idleAnimation(object);
+                            }
+
                         } else {
                             this.command += event.key;
                             training.commandAnimation(object);
@@ -2254,17 +2276,17 @@ export class InflectVocabulary {
 
                         this.keys++;
 
-                        this.idleAnimation(object);
                     });
                 }
 
                 document.addEventListener('keydown', this.keydownFunction);
 
-                window.onkeyup = event => {
+                window.addEventListener('keydown', (event: KeyboardEvent) => {
                     if (event.key === 'Tab') {
+                        event.preventDefault();
                         this.container.focus();
                     }
-                }
+                });
 
                 break;
             default:
@@ -2443,10 +2465,7 @@ export class InflectVocabulary {
             knownCase = Object.values(this.vocabulary[this.currentWordIndex])[rn > 5 - v ? 1 : 0][rn > 5 - v ? rn - 6 + v : rn];
         } while (knownCase === '');
 
-        while (knownCase.includes('^tab^')) {
-            let index = knownCase.search('\\^tab\\^');
-            knownCase = knownCase.slice(0, index) + knownCase.slice(index + 5, knownCase.length);
-        }
+        knownCase = knownCase.replaceAll('^tab^', '');
 
         let specificationDiv = document.getElementById(`div${rn > 5 - v ? 2 + (rn - 5 + v) * 3 : 1 + (rn + 1) * 3}`);
         specificationDiv.classList.add('known-case');
@@ -2473,16 +2492,7 @@ export class InflectVocabulary {
     }
 
     compare(string1: string, string2: string): boolean {
-        while (string1.includes('^tab^')) {
-            let index = string1.search('\\^tab\\^');
-            string1 = string1.slice(0, index) + string1.slice(index + 5, string1.length);
-        }
-
-        while (string2.includes('^tab^')) {
-            let index = string2.search('\\^tab\\^');
-            string2 = string2.slice(0, index) + string2.slice(index + 5, string2.length);
-        }
-        return string1 === string2;
+        return string1.replaceAll('^tab^', '') === string2.replaceAll('^tab^', '');
     }
 
     compareObjects(obj1: InflectedWord, obj2: InflectedWord): boolean {
@@ -2490,35 +2500,19 @@ export class InflectVocabulary {
         let object2 = JSON.parse(JSON.stringify(obj2));
 
         object1.singular.forEach((word, i) => {
-            while (word.includes('^tab^')) {
-                let index = word.search('\\^tab\\^');
-                word = word.slice(0, index) + word.slice(index + 5, word.length);
-            }
-            object1.singular[i] = word;
+            object1.singular[i] = word.replaceAll('^tab^', '');
         });
 
         object1.plural.forEach((word, i) => {
-            while (word.includes('^tab^')) {
-                let index = word.search('\\^tab\\^');
-                word = word.slice(0, index) + word.slice(index + 5, word.length);
-            }
-            object1.plural[i] = word;
+            object1.plural[i] = word.replaceAll('^tab^', '');
         });
 
         object2.singular.forEach((word, i) => {
-            while (word.includes('^tab^')) {
-                let index = word.search('\\^tab\\^');
-                word = word.slice(0, index) + word.slice(index + 5, word.length);
-            }
-            object2.singular[i] = word;
+            object2.singular[i] = word.replaceAll('^tab^', '');
         });
 
         object2.plural.forEach((word, i) => {
-            while (word.includes('^tab^')) {
-                let index = word.search('\\^tab\\^');
-                word = word.slice(0, index) + word.slice(index + 5, word.length);
-            }
-            object2.plural[i] = word;
+            object2.plural[i] = word.replaceAll('^tab^', '');
         });
 
         return Object.values(object1).slice(0, 3).toLocaleString() === Object.values(object2).slice(0, 3).toLocaleString();
@@ -2801,11 +2795,12 @@ export class InflectVocabulary {
     }
 
     adjustInputWidth(input: HTMLDivElement, value: string, animation?: boolean): void {
-        console.log(this.padding)
         animation = animation === undefined || animation === true;
         if (input.classList.contains('known-case')) return;
 
-        if (!input.hasChildNodes() && value.length == 0) {
+        let v = value.replaceAll('^tab^', '');
+
+        if (!input.hasChildNodes() && v.length == 0) {
             console.log('apparently empty')
             if (this.automaticPaddingAdjustment) {
                 if (input.classList.contains('selected')) {
@@ -2835,17 +2830,18 @@ export class InflectVocabulary {
         if (!object) return;
         let width = object.getBoundingClientRect().width;
 
-        if (w / width < value.length || this.automaticPaddingAdjustment) {
-            w = Math.round(input.getBoundingClientRect().width -
+        if (w / width < v.length || this.automaticPaddingAdjustment) {
+            w = Math.round((input.getBoundingClientRect().width -
                 parseFloat(window.getComputedStyle(input).paddingLeft) -
                 parseFloat(window.getComputedStyle(input).paddingRight) -
                 parseFloat(window.getComputedStyle(input).borderLeftWidth) -
-                parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100 / 100;
+                parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100) / 100;
             let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
-            let h = w / value.length * aspectRatio;
-            padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.getBoundingClientRect().height / 2 * 0.05);
+            let h = w / v.length * aspectRatio;
+            padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.offsetHeight * 0.05);
 
-            this.padding[id] = Math.min(padding, 0.85 * input.offsetHeight / 2);
+
+            this.padding[id] = padding;
             this.animatedBorderWidth = parseFloat(window.getComputedStyle(input).borderTopWidth);
         }
 
@@ -2857,7 +2853,6 @@ export class InflectVocabulary {
         }
 
         if (this.automaticPaddingAdjustment) {
-            console.log('automatic animation')
             this.automaticPaddingAnimation(input, false, false);
         } else {
             this.paddingAnimation(input);

@@ -225,7 +225,10 @@ input.checkbox {
 }
 
 .t {
+  box-sizing: border-box;
   background: none;
+  flex-direction: row;
+  display: flex;
 }
 
 .not-editable {
@@ -301,13 +304,14 @@ input.checkbox {
 }
 
 .homeInput {
+  box-sizing: border-box;
   flex-direction: row;
   height: 12vh;
   display: flex;
 }
 
 .homeNavbar {
-  height: 23vh;
+  min-height: 23vh;
 }
 
 .inflectVocabularyBody {

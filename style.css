@@ -248,6 +248,9 @@ input.checkbox {
 
 .t {
     background: none;
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box;
 }
 
 .not-editable {
@@ -329,10 +332,11 @@ input.checkbox {
     height: 12vh;
     display: flex;
     flex-direction: row;
+    box-sizing: border-box;
 }
 
 .homeNavbar {
-    height: 23vh;
+    min-height: 23vh;
 }
 
 

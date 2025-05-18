@@ -5,6 +5,7 @@ export class HomeMenu {
     iconPlaceholder: HTMLDivElement;
     navbar: HTMLDivElement;
 
+    padding = 0;
     command = '';
     keyDownFunction: EventListener;
     resizeFunction: EventListener;
@@ -14,7 +15,18 @@ export class HomeMenu {
     }
 
     modifyDocument(): void {
-        this.resizeFunction = () => this.movementAnimation();
+        this.resizeFunction = () => {
+            let object = <HTMLObjectElement>this.input.lastElementChild;
+            if (!object) return;
+            let w = window.innerWidth;
+            let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+            let h = (w / (this.input.childElementCount + 1)) * aspectRatio;
+            let padding = (this.input.getBoundingClientRect().height - h) / 2;
+            this.padding = Math.max(padding, 1);
+            this.movementAnimation();
+
+            this.movementAnimation()
+        };
         window.addEventListener('resize', this.resizeFunction);
         this.input = document.querySelector('#container');
         this.iconPlaceholder = document.querySelector('#icon-placeholder');
@@ -59,9 +71,16 @@ export class HomeMenu {
             let forbiddenCharacters = ['<', '´', '`', '^'];
             if (event.key === 'Backspace' && this.input.lastElementChild) {
                 this.input.lastElementChild.remove();
-                this.movementAnimation();
                 this.command = this.command.slice(0, this.command.length - 1);
                 keys--;
+                let object = <HTMLObjectElement>this.input.lastElementChild;
+                if (!object) return;
+                let w = window.innerWidth;
+                let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                let h = (w / (keys + 1)) * aspectRatio;
+                let padding = (this.input.getBoundingClientRect().height - h) / 2;
+                this.padding = Math.max(padding, 1);
+                this.movementAnimation();
                 return;
             } else if (event.key === 'Enter') {
                 switch (this.command) {
@@ -129,8 +148,10 @@ export class HomeMenu {
                     default:
                         break;
                 }
-                this.command = '';
+
                 keys = 0;
+                this.command = '';
+                this.padding = 0;
                 this.input.innerHTML = '';
                 return;
             } else if (forbiddenCharacters.includes(event.key) || event.key.length > 1) {
@@ -142,16 +163,28 @@ export class HomeMenu {
             object.id = `key${keys}`;
             object.style.height = `100%`;
             this.input.insertAdjacentElement('beforeend', object);
-            let width = object.clientHeight;
             object.hidden = true;
 
             object.addEventListener('load', _ => {
-                if (keys >= Math.floor(window.innerWidth / width)) {
-                    object.remove();
-                    for (let i = 0; i < keys; i++) {
-                        this.failureAnimation(<HTMLObjectElement>this.input.children[i]);
+                object.hidden = false;
+                let width = Math.floor(object.getBoundingClientRect().width * 100) / 100;
+                let w = window.innerWidth;
+                object.hidden = true;
+                if (keys + 2 > Math.floor(w / width)) {
+                    object.hidden = false;
+                    let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
+                    object.hidden = true;
+                    let h = (w / (keys + 2)) * aspectRatio;
+                    let padding = (this.input.getBoundingClientRect().height - h) / 2;
+                    if (padding > this.input.getBoundingClientRect().height / 2 * 0.85) {
+                        object.remove();
+                        for (let i = 0; i < keys; i++) {
+                            addVocabulary.failureAnimation(<HTMLObjectElement>this.input.children[i]);
+                        }
+                        return;
+                    } else {
+                        this.padding = Math.max(padding, 1);
                     }
-                    return;
                 }
                 object.hidden = false;
 
@@ -228,7 +261,12 @@ export class HomeMenu {
             if (inp.childElementCount > 1) {
                 inp.style.transition = 'padding 250ms';
             }
-            inp.style.paddingLeft = `${(window.innerWidth - inp.childElementCount * object.clientHeight) / 2}px`;
+            inp.style.paddingTop = `${this.padding}px`;
+            inp.style.paddingBottom = `${this.padding}px`;
+
+            let height = inp.getBoundingClientRect().height - 2 * this.padding;
+            inp.style.paddingRight = `${(window.innerWidth - inp.childElementCount * height) / 2}px`;
+            inp.style.paddingLeft = `${(window.innerWidth - inp.childElementCount * height) / 2}px`;
         }
     }
 }
