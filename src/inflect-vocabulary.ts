@@ -235,7 +235,7 @@ export class InflectVocabulary {
                                 this.genderSplitButton = document.createElement('button');
                                 this.genderSplitButton.classList.add('roundButton', 'genderSplitButton');
                                 let svg = document.createElement('img');
-                                svg.src = '/split-genders.svg';
+                                svg.src = './split-genders.svg';
                                 this.genderSplitButton.append(svg);
                                 this.navbar.appendChild(this.genderSplitButton);
 
