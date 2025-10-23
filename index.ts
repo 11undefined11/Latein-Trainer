@@ -34,4 +34,5 @@ export function removeAllEventListeners(): void {
     window.removeEventListener('resize', home.resizeFunction);
     window.removeEventListener('resize', training.resizeFunction);
     window.removeEventListener('resize', inflectVocabulary.resizeFunction);
+    window.removeEventListener('resize', addVocabulary.resizeFunction);
 }

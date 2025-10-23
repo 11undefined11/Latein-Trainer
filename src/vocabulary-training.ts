@@ -1,5 +1,6 @@
 import { addVocabulary, createDiv, home, removeAllEventListeners } from "..";
 import { WordBundle } from "./add-vocabulary";
+import { InflectedWord, InflectVocabulary } from "./inflect-vocabulary";
 
 export class VocabularyTraining {
     container: HTMLDivElement;
@@ -45,7 +46,7 @@ export class VocabularyTraining {
                     let padding = (inp.getBoundingClientRect().height - h) / 2;
                     this.padding[inp.id.charAt(3)] = Math.max(padding, 0.1);
                     this.movementAnimation(inp);
-                } else if (inp.classList.contains('not-editable')) {
+                } else if (inp.classList.contains('not-editable') && inp.querySelector("span")) {
                     let max = inp.clientHeight * 0.6;
                     let fontSize: number;
 
@@ -67,7 +68,7 @@ export class VocabularyTraining {
     modifyDocument(): void {
         window.addEventListener('resize', this.resizeFunction);
 
-        const request = window.indexedDB.open('Vocabulary', 1);
+        const request = window.indexedDB.open('Vocabulary', 2);
 
         request.addEventListener('error', _ => {
             this.vocabulary = [];
@@ -233,7 +234,7 @@ export class VocabularyTraining {
                             });
 
                             let object = document.createElement('object');
-                            object.data = './keys/OG_T.svg';
+                            object.data = './keys/Reversion_T.svg';
                             object.id = `key${this.keys}-inp${this.inputIndex}`;
                             object.style.height = `100%`;
                             let width = object.clientHeight;
@@ -443,7 +444,7 @@ export class VocabularyTraining {
                             if (this.inputIndex + 1 < 4) {
                                 this.inputIndex++;
                                 this.selectedInput = <HTMLDivElement>this.container.children[inputs[this.inputIndex]];
-                                if (this.inputIndex + 1 < 4 && this.selectedInput.classList.contains('not-editable')) {
+                                while (this.inputIndex + 1 < 4 && this.selectedInput.classList.contains('not-editable')) {
                                     this.inputIndex += 1;
                                     this.selectedInput = <HTMLDivElement>this.container.children[inputs[this.inputIndex]];
                                 }
@@ -451,7 +452,7 @@ export class VocabularyTraining {
                                 this.inputStyling();
                             } else if (this.inputIndex + 1 === 4) {
                                 let emptyLines: [boolean, boolean, boolean, boolean] = [undefined, undefined, undefined, undefined];
-                                Object.values(this.currentWord).slice(0, 4).forEach((value, i) => {
+                                Object.values(this.currentWord).slice(0, 4).forEach((value: string, i: number) => {
                                     if (!document.querySelector(`#div${inputs[i]}`).classList.contains('not-editable')) {
                                         if (value === Object.values(this.vocabulary[this.currentWordIndex])[i]) {
                                             let inp = <HTMLDivElement>document.querySelector(`#div${inputs[i]}`);
@@ -481,6 +482,36 @@ export class VocabularyTraining {
                                             if (this.result[i] === undefined) {
                                                 this.result[i] = false;
                                             }
+                                        }
+                                    } else if (Object.values(this.vocabulary[this.currentWordIndex])[i].includes("^ign^")) {
+                                        this.currentWord[Object.keys(this.currentWord)[i]] = Object.values(this.vocabulary[this.currentWordIndex])[i];
+                                        let div = <HTMLDivElement>document.querySelector(`#div${inputs[i]}`);
+                                        if (div && Object.values(this.vocabulary[this.currentWordIndex])[i].replaceAll("^ign^", '').trim() != "") {
+                                            div.innerHTML = "";
+                                            let span = div.appendChild(document.createElement('span'));
+                                            span.innerHTML = Object.values(this.currentWord)[i].replaceAll("^ign^", "");
+                                            span.classList.add("reveal");
+
+                                            let max = div.clientHeight * 0.6;
+                                            let fontSize: number;
+
+                                            span.style.fontSize = max + 'px';
+
+                                            span.style.whiteSpace = 'nowrap';
+                                            span.style.display = 'inline-block';
+                                            span.style.width = 'auto';
+                                            span.style.fontSize = max + 'px';
+                                            while (span.scrollWidth > div.clientWidth * 0.95 || span.clientHeight > max) {
+                                                fontSize = parseInt(span.style.fontSize.slice(0, -2));
+                                                if (fontSize <= 1) break;
+                                                span.style.fontSize = (fontSize - 1) + 'px';
+                                            }
+                                            while (span.clientHeight > max) {
+                                                fontSize = parseInt(span.style.fontSize.slice(0, -2));
+                                                span.style.fontSize = (fontSize - 1) + 'px';
+                                            }
+                                        } else {
+                                            emptyLines[i] = true;
                                         }
                                     }
                                 });
@@ -635,7 +666,7 @@ export class VocabularyTraining {
             }
 
             let object = document.createElement('object');
-            object.data = './keys/OG_T.svg';
+            object.data = './keys/Reversion_T.svg';
             object.id = `key${this.keys}-inp${this.inputIndex}`;
             object.style.height = `100%`;
             this.selectedInput.insertAdjacentElement('beforeend', object);
@@ -665,7 +696,14 @@ export class VocabularyTraining {
                 object.hidden = false;
 
                 let svg = object.contentDocument;
-                svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
+                if (event.key === '<') {
+                    svg.querySelector('#tspan7').innerHTML = '&lt;';
+                } else if (event.key === '&') {
+                    svg.querySelector('#tspan7').innerHTML = '&amp;';
+                } else {
+                    if (event.key === '/') event.preventDefault();
+                    svg.querySelector('#tspan7').innerHTML = event.key.charAt(0);
+                }
 
                 if (this.currentWord && !isNaN(this.currentWordIndex) && !this.commandMode) {
                     Object.defineProperty(
@@ -692,22 +730,41 @@ export class VocabularyTraining {
     }
 
     startNewTrainingRound(): void {
+        const isEmpty = (word: WordBundle): boolean => {
+            if ((
+                Object.values(word).slice(0, 4).filter((w: string) => w.trim() === "").length >= 3
+            ) || (
+                    word.latinWord.includes('^con^')
+                ) || (
+                    !word.selected
+                ) || (
+                    Object.values(word).slice(0, 4).filter((w: string) => w.includes("^ign^")).length >= 3
+                )) {
+                return true;
+            } else return false;
+        }
+
         if (this.vocabulary.length === 0) {
             setTimeout(_ => alert('Keine Vokabeln!'), 50);
             return;
         }
 
         this.round++;
+        this.result = [undefined, undefined, undefined, undefined];
 
         let overallProbabilty = 0;
-        this.vocabulary.forEach(word => { if (word.selected) { overallProbabilty += word.probability } });
+        this.vocabulary.forEach(word => { if (!isEmpty(word)) { overallProbabilty += word.probability } });
+        if (overallProbabilty === 0) {
+            setTimeout(_ => alert('Keine Vokabeln!'), 50);
+            return;
+        }
 
         let randomNumber = Math.floor(Math.random() * overallProbabilty * 10) / 10;
         let lowestDifference: number;
         let lastProbability = 0;
 
         this.vocabulary.forEach((word, i) => {
-            if (word.selected) {
+            if (!isEmpty(word)) {
                 if (lowestDifference === undefined) {
                     lowestDifference = Math.abs(randomNumber - (lastProbability + word.probability));
                     this.currentWord = word;
@@ -729,9 +786,6 @@ export class VocabularyTraining {
             let rn = Math.random();
             if (rn <= 0.5) {
                 savedProperty = ['latinWord', { value: this.currentWord.latinWord }];
-                this.inputIndex = 1;
-                this.selectedInput = <HTMLDivElement>this.container.children[this.inputIndex + 1];
-                this.inputStyling();
             } else if (rn <= 0.7) {
                 savedProperty = ['inflections', { value: this.currentWord.inflections }];
             } else if (rn <= 0.95) {
@@ -739,7 +793,7 @@ export class VocabularyTraining {
             } else {
                 savedProperty = ['relatedForeignWords', { value: this.currentWord.relatedForeignWords }];
             }
-        } while (savedProperty[1].value.trim() === '');
+        } while (savedProperty[1].value.trim() === '' || savedProperty[1].value.includes('^ign^'));
 
         this.currentWord = {
             latinWord: '',
@@ -752,29 +806,46 @@ export class VocabularyTraining {
 
         Object.defineProperty(this.currentWord, savedProperty[0], savedProperty[1]);
 
-        let previousFixedDiv = document.querySelector('.not-editable')
-        if (previousFixedDiv) {
-            previousFixedDiv.classList.remove('not-editable');
-        }
-
         document.querySelectorAll('.t').forEach(t => t.innerHTML = '');
+        document.querySelectorAll(".not-editable").forEach(div => div.classList.remove("not-editable"));
+        Object.values(this.vocabulary[this.currentWordIndex]).slice(0, 4).forEach((w: string, i: number) => {
+            let div = document.getElementById("div" + i * 2);
+            if (Object.keys(this.vocabulary[this.currentWordIndex])[i] != savedProperty[0]) {
+                if (w.includes("^ign^")) {
+                    div.classList.add("not-editable")
+                }
+            } else {
+                div.classList.add("not-editable");
+                let max = div.clientHeight * 0.6;
+                let fontSize: number;
 
-        let specificationDiv = document.getElementById(`div${Object.keys(this.currentWord).findIndex(k => k === savedProperty[0]) * 2}`);
-        specificationDiv.classList.add('not-editable');
+                let span = document.createElement('span');
+                span.style.fontSize = max + 'px';
+                span.innerHTML = savedProperty[1].value;
+                div.appendChild(span);
 
-        let max = specificationDiv.clientHeight * 0.6;
-        let fontSize: number;
+                span.style.whiteSpace = 'nowrap';
+                span.style.display = 'inline-block';
+                span.style.width = 'auto';
+                span.style.fontSize = max + 'px';
+                while (span.scrollWidth > div.clientWidth * 0.95 || span.clientHeight > max) {
+                    fontSize = parseInt(span.style.fontSize.slice(0, -2));
+                    if (fontSize <= 1) break;
+                    span.style.fontSize = (fontSize - 1) + 'px';
+                }
+                while (span.clientHeight > max) {
+                    fontSize = parseInt(span.style.fontSize.slice(0, -2));
+                    span.style.fontSize = (fontSize - 1) + 'px';
+                }
+                this.result[i] = true;
+            }
+        });
 
-        let span = document.createElement('span');
-        span.style.fontSize = max + 'px';
-        span.innerHTML = savedProperty[1].value;
-        specificationDiv.appendChild(span);
-        while (span.clientHeight > max) {
-            fontSize = parseInt(span.style.fontSize.slice(0, -2));
-            span.style.fontSize = (fontSize - 1) + 'px';
-        }
-
-        this.result = [undefined, undefined, undefined, undefined];
+        let i = 0;
+        while (this.container.querySelector("#div" + i * 2).classList.contains("not-editable")) i++;
+        this.inputIndex = i;
+        this.selectedInput = this.container.querySelector("#div" + i * 2);
+        this.inputStyling();
     }
 
     movementAnimation(inp: HTMLDivElement): void {

@@ -1,4 +1,5 @@
 import { createDiv, home, removeAllEventListeners, training } from "..";
+import { VOCABULARY } from "./vocabulary";
 
 export class AddVocabulary {
     container: HTMLDivElement;
@@ -35,6 +36,7 @@ export class AddVocabulary {
     firstTimeout: number;
     animatedInputIndex: number;
     animatedBorderWidth = 0;
+    upgradeNeeded = false;
 
     keyDownFunction: EventListener;
     maxCharacters: number;
@@ -44,11 +46,33 @@ export class AddVocabulary {
     resizeFunction: () => void;
 
     constructor() {
-        const request = window.indexedDB.open('Vocabulary', 1);
+        const request = window.indexedDB.open('Vocabulary', 2);
 
         request.addEventListener('error', _ => {
             console.error('There is an error. Have fun fixing it. Details:' + request.error);
         })
+
+        request.addEventListener('upgradeneeded', () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains('vocabulary')) {
+                const objectStore = db.createObjectStore(`vocabulary`, { autoIncrement: true });
+                objectStore.createIndex("latinWord", "latinWord", { unique: false });
+                objectStore.createIndex("inflections", "inflections", { unique: false });
+                objectStore.createIndex("germanTranslation", "germanTranslation", { unique: false });
+                objectStore.createIndex("relatedForeignWords", "relatedForeignWords", { unique: false });
+                objectStore.createIndex("selected", "selected", { unique: false });
+                objectStore.createIndex("probability", "probability", { unique: false });
+            }
+            if (!db.objectStoreNames.contains('inflected vocabulary')) {
+                const objectStore2 = db.createObjectStore(`inflected vocabulary`, { autoIncrement: true });
+                objectStore2.createIndex("singular", "singular", { unique: false });
+                objectStore2.createIndex("plural", "plural", { unique: false });
+                objectStore2.createIndex("verb", "verb", { unique: false });
+                objectStore2.createIndex("probability", "probability", { unique: false });
+            }
+            this.database = request.result;
+            this.upgradeNeeded = true;
+        });
 
         request.addEventListener('success', _ => {
             this.database = request.result;
@@ -61,27 +85,21 @@ export class AddVocabulary {
             req.onsuccess = () => {
                 this.vocabulary = req.result;
                 this.wordIndex = this.vocabulary.length;
+
+                if (this.upgradeNeeded) {
+                    this.vocabulary = VOCABULARY.concat(this.vocabulary);
+                    const writeTransaction = this.database.transaction('vocabulary', 'readwrite');
+                    writeTransaction.onerror = () => console.error(writeTransaction.error);
+                    const objSt = writeTransaction.objectStore('vocabulary');
+                    this.vocabulary.forEach((word, index) => {
+                        const req = objSt.put(word, index + 1);
+                        req.onerror = () => console.error(req.error);
+                    });
+                }
             }
-        })
+        });
 
-        request.addEventListener('upgradeneeded', (event: IDBVersionChangeEvent) => {
-            const db = request.result;
-            const objectStore = db.createObjectStore(`vocabulary`, { autoIncrement: true });
-            objectStore.createIndex("latinWord", "latinWord", { unique: false });
-            objectStore.createIndex("inflections", "inflections", { unique: false });
-            objectStore.createIndex("germanTranslation", "germanTranslation", { unique: false });
-            objectStore.createIndex("relatedForeignWords", "relatedForeignWords", { unique: false });
-            objectStore.createIndex("selected", "selected", { unique: false });
-            objectStore.createIndex("probability", "probability", { unique: false });
-            const objectStore2 = db.createObjectStore(`inflected vocabulary`, { autoIncrement: true });
-            objectStore2.createIndex("singular", "singular", { unique: false });
-            objectStore2.createIndex("plural", "plural", { unique: false });
-            objectStore2.createIndex("verb", "verb", { unique: false });
-            objectStore2.createIndex("probability", "probability", { unique: false });
-            this.database = request.result;
-        })
-
-        const notImportantRequest_____yet = window.indexedDB.open('player data', 1);
+        const notImportantRequest_____yet = window.indexedDB.open('player data', 2);
 
         notImportantRequest_____yet.addEventListener('upgradeneeded', (event) => {
             const db = notImportantRequest_____yet.result;
@@ -93,7 +111,7 @@ export class AddVocabulary {
                 const db = notImportantRequest_____yet.result;
                 const transaction = db.transaction('versions played', 'readwrite');
                 const objectStore = transaction.objectStore('versions played');
-                objectStore.add('Beta');
+                objectStore.add('Beta Reversion');
 
                 transaction.oncomplete = () => {
                     console.log('Data added successfully');
@@ -112,7 +130,7 @@ export class AddVocabulary {
     }
 
     modifyDocument(): void {
-        const request = window.indexedDB.open('Vocabulary', 1);
+        const request = window.indexedDB.open('Vocabulary', 2);
 
         request.addEventListener('error', _ => {
             console.error('There is an error. Have fun fixing it. Details:' + request.error);
@@ -286,14 +304,20 @@ export class AddVocabulary {
                     }
 
                     this.wordIndex--;
+                    if (this.vocabulary[this.wordIndex].latinWord.includes('^con^') && this.vocabulary[this.wordIndex - 1]) {
+                        this.wordIndex--;
+                    } else if (this.vocabulary[this.wordIndex].latinWord.includes('^con^') && !this.vocabulary[this.wordIndex - 1]) {
+                        this.wordIndex++;
+                    }
                     this.currentWord = this.vocabulary[this.wordIndex];
 
                     for (let i = 0; i < this.container.childElementCount; i++) {
                         let value = <string>Object.values(this.currentWord)[i];
+                        value = value.replaceAll("^ign^", "");
                         this.container.children[i].innerHTML = '';
                         for (let ii = 0; ii < value.length; ii++) {
                             let object = document.createElement('object');
-                            object.data = './keys/OG_T.svg';
+                            object.data = './keys/Reversion_T.svg';
                             object.id = `key${ii}-inp${i}`;
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
@@ -310,19 +334,18 @@ export class AddVocabulary {
                                 }
                             })
                         }
-
-                        let objects = this.container.querySelectorAll('object');
-                        if (objects.length > 0) {
-                            objects[objects.length - 1].addEventListener('load', _ => {
-                                objects.forEach(obj => obj.hidden = false);
-                                for (let i = 0; i < this.container.childElementCount; i++) {
-                                    let value = Object.values(this.currentWord)[i];
-                                    this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
-                                }
-                            });
-                        }
                     }
 
+                    let objects = this.container.querySelectorAll('object');
+                    if (objects.length > 0) {
+                        objects[objects.length - 1].addEventListener('load', _ => {
+                            objects.forEach(obj => obj.hidden = false);
+                            for (let i = 0; i < this.container.childElementCount; i++) {
+                                let value = Object.values(this.currentWord)[i];
+                                this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value, true);
+                            }
+                        });
+                    }
                 } else {
                     this.vocabulary[this.wordIndex] = this.currentWord;
 
@@ -340,14 +363,20 @@ export class AddVocabulary {
                         idontcare.onerror = () => console.error(idontcare.error);
 
                         this.wordIndex--;
+                        if (this.vocabulary[this.wordIndex].latinWord.includes('^con^') && this.vocabulary[this.wordIndex - 1]) {
+                            this.wordIndex--;
+                        } else if (this.vocabulary[this.wordIndex].latinWord.includes('^con^') && !this.vocabulary[this.wordIndex - 1]) {
+                            this.wordIndex++;
+                        }
 
                         this.currentWord = this.vocabulary[this.wordIndex];
                         for (let i = 0; i < this.container.childElementCount; i++) {
                             let value = Object.values(this.currentWord)[i];
+                            value = value.replaceAll("^ign^", "");
                             this.container.children[i].innerHTML = '';
                             for (let ii = 0; ii < value.length; ii++) {
                                 let object = document.createElement('object');
-                                object.data = './keys/OG_T.svg';
+                                object.data = './keys/Reversion_T.svg';
                                 object.id = `key${ii}-inp${i}`;
                                 object.style.height = `100%`;
                                 this.container.children[i].insertAdjacentElement('beforeend', object);
@@ -384,7 +413,10 @@ export class AddVocabulary {
 
         this.buttonRightFunction = () => {
             this.buttonRight.classList.remove('clicked');
-            if (!this.vocabulary[this.wordIndex + 1]) {
+            if (
+                !this.vocabulary[this.wordIndex + 1] ||
+                (this.vocabulary[this.wordIndex + 1].latinWord.includes('^con^') && !this.vocabulary[this.wordIndex + 2])
+            ) {
                 this.vocabulary[this.wordIndex] = this.currentWord;
 
                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
@@ -398,6 +430,9 @@ export class AddVocabulary {
                     }
 
                     this.wordIndex++;
+                    if (this.vocabulary[this.wordIndex] && this.vocabulary[this.wordIndex].latinWord.includes('^con^')) {
+                        this.wordIndex++;
+                    }
                     this.keys = 0;
                     this.currentWord = {
                         latinWord: '',
@@ -412,8 +447,7 @@ export class AddVocabulary {
                         this.container.children[i].innerHTML = '';
 
                         this.inputIndex = 0;
-                        this.selectedInput = <HTMLDivElement>this.container.children[0];
-                        this.selectedInput.classList.add('selected');
+                        this.changeSelectedInput();
                         if (i != 0) {
                             let div = <HTMLDivElement>this.container.children[i];
                             div.classList.remove('selected');
@@ -444,14 +478,18 @@ export class AddVocabulary {
                     idontcare.onerror = () => console.error(idontcare.error);
 
                     this.wordIndex++;
+                    if (this.vocabulary[this.wordIndex].latinWord.includes('^con^')) {
+                        this.wordIndex++;
+                    }
                     this.currentWord = this.vocabulary[this.wordIndex];
 
                     for (let i = 0; i < this.container.childElementCount; i++) {
-                        let value = Object.values(this.currentWord)[i];
+                        let value = <string>Object.values(this.currentWord)[i];
+                        value = value.replaceAll("^ign^", "");
                         this.container.children[i].innerHTML = '';
                         for (let ii = 0; ii < value.length; ii++) {
                             let object = document.createElement('object');
-                            object.data = './keys/OG_T.svg';
+                            object.data = './keys/Reversion_T.svg';
                             object.id = `key${ii}-inp${i}`;
                             object.style.height = `100%`;
                             this.container.children[i].insertAdjacentElement('beforeend', object);
@@ -466,7 +504,7 @@ export class AddVocabulary {
                                 } else {
                                     svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
                                 }
-                            })
+                            });
                         }
                     }
 
@@ -694,8 +732,10 @@ export class AddVocabulary {
                         }
 
                         if (this.enterMode) {
-                            this.buttonRight.classList.remove('clicked');
-                            if (!this.vocabulary[this.wordIndex + 1]) {
+                            if (
+                                !this.vocabulary[this.wordIndex + 1] ||
+                                (this.vocabulary[this.wordIndex + 1].latinWord.includes('^con^') && !this.vocabulary[this.wordIndex + 2])
+                            ) {
                                 this.vocabulary[this.wordIndex] = this.currentWord;
 
                                 const transaction = this.database.transaction(`vocabulary`, 'readwrite');
@@ -709,6 +749,9 @@ export class AddVocabulary {
                                     }
 
                                     this.wordIndex++;
+                                    if (this.vocabulary[this.wordIndex] && this.vocabulary[this.wordIndex].latinWord.includes('^con^')) {
+                                        this.wordIndex++;
+                                    }
                                     this.keys = 0;
                                     this.currentWord = {
                                         latinWord: '',
@@ -723,15 +766,20 @@ export class AddVocabulary {
                                         this.container.children[i].innerHTML = '';
 
                                         this.inputIndex = 0;
-                                        this.selectedInput = <HTMLDivElement>this.container.children[0];
-                                        this.selectedInput.classList.add('selected');
+                                        this.changeSelectedInput();
                                         if (i != 0) {
                                             let div = <HTMLDivElement>this.container.children[i];
                                             div.classList.remove('selected');
                                             div.style.padding = `${this.padding[i]}px 0.5vw`;
-                                        };
+                                        }
                                     }
                                 }
+
+                                for (let i = 0; i < this.container.childElementCount; i++) {
+                                    let value = Object.values(this.currentWord)[i];
+                                    this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                                }
+
                             } else {
                                 this.vocabulary[this.wordIndex] = this.currentWord;
 
@@ -749,23 +797,45 @@ export class AddVocabulary {
                                     idontcare.onerror = () => console.error(idontcare.error);
 
                                     this.wordIndex++;
+                                    if (this.vocabulary[this.wordIndex].latinWord.includes('^con^')) {
+                                        this.wordIndex++;
+                                    }
                                     this.currentWord = this.vocabulary[this.wordIndex];
 
                                     for (let i = 0; i < this.container.childElementCount; i++) {
-                                        let value = Object.values(this.currentWord)[i];
+                                        let value = <string>Object.values(this.currentWord)[i];
+                                        value = value.replaceAll("^ign^", "");
                                         this.container.children[i].innerHTML = '';
                                         for (let ii = 0; ii < value.length; ii++) {
                                             let object = document.createElement('object');
-                                            object.data = './keys/OG_T.svg';
+                                            object.data = './keys/Reversion_T.svg';
                                             object.id = `key${ii}-inp${i}`;
                                             object.style.height = `100%`;
                                             this.container.children[i].insertAdjacentElement('beforeend', object);
 
+                                            object.hidden = true;
                                             object.addEventListener('load', _ => {
                                                 let svg = object.contentDocument;
-                                                svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
-                                            })
+                                                if (value.charAt(ii) === '<') {
+                                                    svg.querySelector('#tspan7').innerHTML = '&lt;';
+                                                } else if (value.charAt(ii) === '&') {
+                                                    svg.querySelector('#tspan7').innerHTML = '&amp;';
+                                                } else {
+                                                    svg.querySelector('#tspan7').innerHTML = value.charAt(ii);
+                                                }
+                                            });
                                         }
+                                    }
+
+                                    let objects = this.container.querySelectorAll('object');
+                                    if (objects.length > 0) {
+                                        objects[objects.length - 1].addEventListener('load', _ => {
+                                            objects.forEach(obj => obj.hidden = false);
+                                            for (let i = 0; i < this.container.childElementCount; i++) {
+                                                let value = Object.values(this.currentWord)[i];
+                                                this.adjustInputWidth(<HTMLDivElement>this.container.children[i], value);
+                                            }
+                                        });
                                     }
                                 }
                             }
@@ -802,7 +872,7 @@ export class AddVocabulary {
             }
 
             let object = document.createElement('object');
-            object.data = './keys/OG_T.svg';
+            object.data = './keys/Reversion_T.svg';
             object.id = `key${this.keys}-inp${this.inputIndex}`;
             object.style.height = `100%`;
             this.selectedInput.insertAdjacentElement('beforeend', object);
@@ -830,7 +900,6 @@ export class AddVocabulary {
                         object.hidden = true;
                         let h = (w / (this.keys + 1)) * aspectRatio;
                         let padding = (this.selectedInput.getBoundingClientRect().height - h) / 2;
-                        console.log(padding);
                         if (padding > this.selectedInput.getBoundingClientRect().height / 2 * 0.85) {
                             object.remove();
                             for (let i = 0; i < this.keys; i++) {
@@ -953,7 +1022,7 @@ export class AddVocabulary {
     paddingAnimation(input: HTMLDivElement): void {
         let id = parseInt(input.id.charAt(3));
         let marginLeft = parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2));
-        let borderLeft = 0.005 * input.offsetWidth - marginLeft;
+        let borderLeft = 0.005 * window.innerWidth - marginLeft;
 
         input.style.padding = '0';
         input.style.willChange = 'border-width';
@@ -993,7 +1062,7 @@ export class AddVocabulary {
 
         let id = parseInt(input.id.charAt(3));
         let marginLeft = parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2));
-        let borderLeft = 0.005 * input.offsetWidth - marginLeft;
+        let borderLeft = 0.005 * window.innerWidth - marginLeft;
         let newPadding = this.padding[id];
         let borderWidth = adjustment ? this.animatedBorderWidth : 0;
         let $tepSize = (newPadding - borderWidth) / 20;
@@ -1007,7 +1076,7 @@ export class AddVocabulary {
 
         if (cancelable) this.firstInterval = setInterval(intervalFunction1.bind(this), timeout1);
         else interval1 = setInterval(intervalFunction1.bind(this), timeout1);
-        
+
         window.addEventListener('resize', resizeHandler.bind(this), { passive: true });
 
         if (!cancelable) {
@@ -1094,6 +1163,7 @@ export class AddVocabulary {
 
     adjustInputWidth(input: HTMLDivElement, value: string, animation?: boolean): string {
         animation = animation === undefined || animation === true;
+        let v = value.replaceAll("^ign^", "");
 
         if (!input.hasChildNodes() && value.length == 0) {
             if (this.automaticPaddingAdjustment) {
@@ -1112,27 +1182,35 @@ export class AddVocabulary {
         }
 
         let padding: number;
-        let w = Math.round(input.getBoundingClientRect().width -
+        let w = Math.round((window.innerWidth -
             parseFloat(window.getComputedStyle(input).paddingLeft) -
             parseFloat(window.getComputedStyle(input).paddingRight) -
             parseFloat(window.getComputedStyle(input).borderLeftWidth) -
-            parseFloat(window.getComputedStyle(input).borderRightWidth) * 100) / 100;
+            parseFloat(window.getComputedStyle(input).borderRightWidth) -
+            parseFloat(window.getComputedStyle(input).marginLeft) -
+            parseFloat(window.getComputedStyle(input).marginRight)) * 100) / 100;
         let object = <HTMLObjectElement>input.firstElementChild;
         let id = parseInt(input.id.charAt(3));
+        if (!object) {
+            this.padding[id] = 0.05 * input.offsetHeight;
+            return;
+        }
         let width = object.getBoundingClientRect().width;
 
-        if (w / width < value.length || this.automaticPaddingAdjustment) {
-            w = Math.round((input.getBoundingClientRect().width -
+        if (w / width < v.length || this.automaticPaddingAdjustment) {
+            w = Math.round((window.innerWidth -
                 parseFloat(window.getComputedStyle(input).paddingLeft) -
                 parseFloat(window.getComputedStyle(input).paddingRight) -
                 parseFloat(window.getComputedStyle(input).borderLeftWidth) -
-                parseFloat(window.getComputedStyle(input).borderRightWidth)) * 100) / 100;
+                parseFloat(window.getComputedStyle(input).borderRightWidth) -
+                parseFloat(window.getComputedStyle(input).marginLeft) -
+                parseFloat(window.getComputedStyle(input).marginRight)) * 100) / 100;
             object = <HTMLObjectElement>input.lastElementChild;
             let aspectRatio = object.getBoundingClientRect().height / object.getBoundingClientRect().width;
-            let h = w / value.length * aspectRatio;
+            let h = w / v.length * aspectRatio;
             padding = Math.max((input.getBoundingClientRect().height - h) / 2, input.offsetHeight * 0.05);
 
-            this.padding[id] = Math.max(padding, 1);
+            this.padding[id] = padding;
             this.animatedBorderWidth = parseFloat(window.getComputedStyle(input).borderTopWidth);
         }
 
@@ -1153,7 +1231,7 @@ export class AddVocabulary {
         if (this.animatedInputIndex != undefined && param) {
             let input = <HTMLDivElement>document.querySelector(`#div${this.animatedInputIndex}`);
             let marginLeft = parseInt(window.getComputedStyle(input).marginLeft.slice(0, -2));
-            let paddingLeft = 0.005 * input.offsetWidth - marginLeft;
+            let paddingLeft = 0.005 * window.innerWidth - marginLeft;
             let paddingTop = this.padding[this.animatedInputIndex];
             input.style.padding = `${paddingTop}px ${paddingLeft}px`;
             input.style.border = 'none';
