@@ -1,7 +1,0 @@
-{
-    "compilerOptions": {
-      "experimentalDecorators": true,
-      "jsxImportSource": "preact",
-      "lib": ["DOM", "ES2023"]
-    },
-  }
